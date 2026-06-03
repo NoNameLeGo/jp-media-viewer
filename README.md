@@ -79,6 +79,6 @@ APK 输出路径：
 
 ## 许可
 
-本项目使用 [GNU General Public License v3.0 or later](LICENSE) 许可证发布。
+本项目使用 [GNU Affero General Public License v3.0](LICENSE) 许可证发布。
 
-SPDX-License-Identifier: GPL-3.0-or-later
+SPDX-License-Identifier: AGPL-3.0-only
