@@ -27,9 +27,11 @@ fun FolderPickerScreen(
     onFoldersChanged: (List<String>) -> Unit,
     onRespectNomediaChanged: (Boolean) -> Unit,
     onStartBrowsing: () -> Unit,
+    onStartFavorites: () -> Unit,
     isScanning: Boolean,
     scanProgress: MediaScanner.ScanProgress?,
     mediaCount: Int,
+    favoriteCount: Int,
     hasScanned: Boolean
 ) {
     val context = LocalContext.current
@@ -155,6 +157,16 @@ fun FolderPickerScreen(
                 enabled = folders.isNotEmpty() && !isScanning && mediaCount > 0
             ) {
                 Text("开始浏览")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onStartFavorites,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                enabled = !isScanning
+            ) {
+                Text("查看收藏（$favoriteCount）")
             }
         }
     }

@@ -63,6 +63,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var respectNomedia by remember { mutableStateOf(prefs.getBoolean("respect_nomedia", true)) }
     var isScanning by remember { mutableStateOf(false) }
     var isViewing by remember { mutableStateOf(false) }
+    var isFavoriteBrowsing by remember { mutableStateOf(false) }
     var mediaItems by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var currentIndex by remember { mutableStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
@@ -83,7 +84,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         prefs.edit().putBoolean("respect_nomedia", value).apply()
     }
 
-    fun toggleFavorite(item: MediaItem) {
+    fun toggleFavorite(item: MediaItem): Set<String> {
         val uriString = item.uri.toString()
         val newFavorites = if (uriString in favoriteUris) {
             favoriteUris - uriString
@@ -92,6 +93,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         }
         favoriteUris = newFavorites
         prefs.edit().putStringSet("favorite_uris", newFavorites).apply()
+        return newFavorites
     }
 
     LaunchedEffect(folders, respectNomedia) {
@@ -99,6 +101,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaItems = emptyList()
             currentIndex = 0
             isViewing = false
+            isFavoriteBrowsing = false
             isScanning = false
             scanProgress = null
             hasScanned = false
@@ -120,14 +123,17 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             hasScanned = true
             if (isViewing && mediaItems.isEmpty()) {
                 isViewing = false
+                isFavoriteBrowsing = false
             }
         } catch (_: SecurityException) {
             isViewing = false
+            isFavoriteBrowsing = false
             mediaItems = emptyList()
             hasScanned = true
             scanMessage = "无法读取所选文件夹。请删除该文件夹后重新添加授权。"
         } catch (error: Exception) {
             isViewing = false
+            isFavoriteBrowsing = false
             mediaItems = emptyList()
             hasScanned = true
             scanMessage = "扫描失败：${error.localizedMessage ?: "未知错误"}"
@@ -143,28 +149,68 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             scanMessage = "没有找到图片或视频。可能原因：\n1. 所选目录没有支持的媒体文件\n2. .nomedia 过滤隐藏了部分目录\n3. 文件夹授权已失效，请删除后重新添加"
         } else {
             currentIndex = 0
+            isFavoriteBrowsing = false
             isViewing = true
         }
     }
 
-    if (isViewing && mediaItems.isNotEmpty()) {
+    fun startFavoriteBrowsing() {
+        if (isScanning) {
+            scanMessage = "正在扫描中，请稍后再查看收藏。"
+            return
+        }
+
+        val favoriteItems = mediaItems.filter { it.uri.toString() in favoriteUris }
+        if (favoriteUris.isEmpty()) {
+            scanMessage = "收藏列表为空。浏览图片或视频时双击即可收藏。"
+        } else if (favoriteItems.isEmpty()) {
+            scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
+        } else {
+            currentIndex = 0
+            isFavoriteBrowsing = true
+            isViewing = true
+        }
+    }
+
+    val visibleItems = if (isFavoriteBrowsing) {
+        mediaItems.filter { it.uri.toString() in favoriteUris }
+    } else {
+        mediaItems
+    }
+
+    if (isViewing && visibleItems.isNotEmpty()) {
         MediaViewerScreen(
-            mediaItems = mediaItems,
-            currentIndex = currentIndex,
+            mediaItems = visibleItems,
+            currentIndex = currentIndex.coerceIn(0, visibleItems.lastIndex),
+            isFavoriteBrowsing = isFavoriteBrowsing,
             onNext = {
-                if (mediaItems.isNotEmpty()) {
-                    currentIndex = (currentIndex + 1) % mediaItems.size
+                if (visibleItems.isNotEmpty()) {
+                    currentIndex = (currentIndex + 1) % visibleItems.size
                 }
             },
             onPrevious = {
-                if (mediaItems.isNotEmpty()) {
-                    currentIndex = (currentIndex - 1 + mediaItems.size) % mediaItems.size
+                if (visibleItems.isNotEmpty()) {
+                    currentIndex = (currentIndex - 1 + visibleItems.size) % visibleItems.size
                 }
             },
-            isFavorite = mediaItems[currentIndex].uri.toString() in favoriteUris,
-            onToggleFavorite = { toggleFavorite(mediaItems[currentIndex]) },
+            isFavorite = visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)].uri.toString() in favoriteUris,
+            onToggleFavorite = {
+                val newFavorites = toggleFavorite(visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)])
+                if (isFavoriteBrowsing) {
+                    val remainingCount = mediaItems.count { it.uri.toString() in newFavorites }
+                    if (remainingCount == 0) {
+                        isViewing = false
+                        isFavoriteBrowsing = false
+                        currentIndex = 0
+                        scanMessage = "收藏列表为空。"
+                    } else if (currentIndex >= remainingCount) {
+                        currentIndex = remainingCount - 1
+                    }
+                }
+            },
             onBack = {
                 isViewing = false
+                isFavoriteBrowsing = false
             },
             onSettings = { showSettings = !showSettings }
         )
@@ -200,9 +246,11 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             onFoldersChanged = { saveFolders(it) },
             onRespectNomediaChanged = { saveNomedia(it) },
             onStartBrowsing = { startBrowsing() },
+            onStartFavorites = { startFavoriteBrowsing() },
             isScanning = isScanning,
             scanProgress = scanProgress,
             mediaCount = mediaItems.size,
+            favoriteCount = favoriteUris.size,
             hasScanned = hasScanned
         )
     }

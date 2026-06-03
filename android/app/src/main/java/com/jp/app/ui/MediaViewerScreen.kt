@@ -34,6 +34,7 @@ import com.jp.app.data.MediaItem
 fun MediaViewerScreen(
     mediaItems: List<MediaItem>,
     currentIndex: Int,
+    isFavoriteBrowsing: Boolean,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     isFavorite: Boolean,
@@ -108,7 +109,7 @@ fun MediaViewerScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "${currentIndex + 1} / ${mediaItems.size}${if (isFavorite) " · 已收藏" else ""}",
+                            text = "${currentIndex + 1} / ${mediaItems.size}${if (isFavoriteBrowsing) " · 收藏" else if (isFavorite) " · 已收藏" else ""}",
                             color = Color.White
                         )
                     },
