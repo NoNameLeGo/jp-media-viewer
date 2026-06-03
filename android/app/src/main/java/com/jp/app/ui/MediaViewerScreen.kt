@@ -18,6 +18,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -76,7 +77,7 @@ fun MediaViewerScreen(
                         do {
                             val event = awaitPointerEvent(PointerEventPass.Main)
                             val change = event.changes.firstOrNull() ?: break
-                            val dy = change.positionChange().y
+                            val dy = change.positionChanged().y
                             totalDy += dy
                             change.consume()
                         } while (event.changes.any { it.pressed })
@@ -129,7 +130,7 @@ fun MediaViewerScreen(
                     )
                     Spacer(Modifier.width(16.dp))
                     Text(
-                        text = if (item.isVideo) "🎬" else "🖼�?,
+                        text = if (item.isVideo) "视频" else "图片",
                         color = Color.White
                     )
                 }

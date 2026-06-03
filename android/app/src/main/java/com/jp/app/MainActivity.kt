@@ -89,7 +89,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 onDismissRequest = { showSettings = false },
                 title = { androidx.compose.material3.Text("设置") },
                 text = {
-                    androidx.compose.material3.Row(
+                    androidx.compose.foundation.layout.Row(
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
                         androidx.compose.material3.Text("遵守 .nomedia", modifier = Modifier.weight(1f))

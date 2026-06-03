@@ -58,7 +58,7 @@ fun FolderPickerScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("选择文件�?, style = MaterialTheme.typography.titleMedium)
+            Text("选择文件夹", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
             if (folders.isEmpty()) {
@@ -68,7 +68,7 @@ fun FolderPickerScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("请添加一个或多个文件�?, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("请添加一个或多个文件夹", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(modifier = Modifier.weight(1f)) {
@@ -109,7 +109,7 @@ fun FolderPickerScreen(
             ) {
                 Icon(Icons.Default.Add, null)
                 Spacer(Modifier.width(8.dp))
-                Text("添加文件�?)
+                Text("添加文件夹")
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -139,7 +139,7 @@ fun FolderPickerScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                 }
-                Text(if (isScanning) "扫描中�? else "开始浏�?)
+                Text(if (isScanning) "扫描中..." else "开始浏览")
             }
         }
     }
