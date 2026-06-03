@@ -66,6 +66,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var mediaItems by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var currentIndex by remember { mutableStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
+    var scanMessage by remember { mutableStateOf<String?>(null) }
 
     fun saveFolders(newFolders: List<String>) {
         folders = newFolders
@@ -75,6 +76,30 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     fun saveNomedia(value: Boolean) {
         respectNomedia = value
         prefs.edit().putBoolean("respect_nomedia", value).apply()
+    }
+
+    fun scanMedia() {
+        scope.launch {
+            isScanning = true
+            scanMessage = null
+            try {
+                val items = scanner.scan(folders, respectNomedia)
+                mediaItems = items.shuffled()
+                currentIndex = 0
+                isViewing = mediaItems.isNotEmpty()
+                if (mediaItems.isEmpty()) {
+                    scanMessage = "没有找到图片或视频。请确认所选文件夹包含媒体文件，或尝试关闭 .nomedia 过滤后重新扫描。"
+                }
+            } catch (_: SecurityException) {
+                isViewing = false
+                scanMessage = "无法读取所选文件夹。请删除该文件夹后重新添加授权。"
+            } catch (error: Exception) {
+                isViewing = false
+                scanMessage = "扫描失败：${error.localizedMessage ?: "未知错误"}"
+            } finally {
+                isScanning = false
+            }
+        }
     }
 
     if (isViewing && mediaItems.isNotEmpty()) {
@@ -109,14 +134,8 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 },
                 confirmButton = {
                     androidx.compose.material3.TextButton(onClick = {
-                        scope.launch {
-                            isScanning = true
-                            showSettings = false
-                            val items = scanner.scan(folders, respectNomedia)
-                            mediaItems = items.shuffled()
-                            currentIndex = 0
-                            isScanning = false
-                        }
+                        showSettings = false
+                        scanMedia()
                     }) {
                         androidx.compose.material3.Text("重新扫描")
                     }
@@ -134,19 +153,21 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             respectNomedia = respectNomedia,
             onFoldersChanged = { saveFolders(it) },
             onRespectNomediaChanged = { saveNomedia(it) },
-            onStartBrowsing = {
-                scope.launch {
-                    isScanning = true
-                    val items = scanner.scan(folders, respectNomedia)
-                    mediaItems = items.shuffled()
-                    currentIndex = 0
-                    isScanning = false
-                    if (mediaItems.isNotEmpty()) {
-                        isViewing = true
-                    }
-                }
-            },
+            onStartBrowsing = { scanMedia() },
             isScanning = isScanning
+        )
+    }
+
+    if (scanMessage != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { scanMessage = null },
+            title = { androidx.compose.material3.Text("扫描提示") },
+            text = { androidx.compose.material3.Text(scanMessage ?: "") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { scanMessage = null }) {
+                    androidx.compose.material3.Text("知道了")
+                }
+            }
         )
     }
 }
