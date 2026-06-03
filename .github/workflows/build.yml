@@ -61,8 +61,8 @@ jobs:
         run: chmod +x gradlew
         working-directory: ./android
 
-      - name: Build release APK
-        run: ./gradlew assembleRelease --no-daemon
+      - name: Build installable debug APK
+        run: ./gradlew assembleDebug --no-daemon
         working-directory: ./android
 
       - name: Create GitHub Release
@@ -70,6 +70,6 @@ jobs:
         with:
           name: Release ${{ github.ref_name }}
           tag_name: ${{ github.ref }}
-          body: "APK 自动构建版本：${{ github.ref_name }}"
-          files: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          body: "APK 自动构建版本：${{ github.ref_name }}。此版本为 debug 签名，可直接安装用于测试。"
+          files: android/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: false
