@@ -7,6 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -23,6 +25,7 @@ import com.jp.app.BuildConfig
 import com.jp.app.data.MediaScanner
 
 private const val PROJECT_URL = "https://github.com/NoNameLeGo/jp-media-viewer"
+private const val ISSUES_URL = "https://github.com/NoNameLeGo/jp-media-viewer/issues"
 private const val DEVELOPER_NAME = "NoNameLeGo"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -199,6 +202,9 @@ fun FolderPickerScreen(
             onDismiss = { showAbout = false },
             onOpenProject = {
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PROJECT_URL)))
+            },
+            onOpenIssues = {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ISSUES_URL)))
             }
         )
     }
@@ -207,21 +213,45 @@ fun FolderPickerScreen(
 @Composable
 private fun AboutDialog(
     onDismiss: () -> Unit,
-    onOpenProject: () -> Unit
+    onOpenProject: () -> Unit,
+    onOpenIssues: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("关于 JP Media Viewer") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "本地随机图片/视频浏览器，支持文件夹授权、收藏、手势浏览和媒体缓存。",
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 AboutRow(label = "版本号", value = BuildConfig.VERSION_NAME)
+                AboutRow(label = "构建类型", value = "Beta debug build")
                 AboutRow(label = "开发者", value = DEVELOPER_NAME)
+                AboutRow(label = "许可证", value = "AGPL-3.0")
                 AboutRow(label = "项目地址", value = PROJECT_URL)
+                AboutRow(label = "问题反馈", value = ISSUES_URL)
+                AboutRow(
+                    label = "隐私说明",
+                    value = "媒体扫描、收藏和缓存均保存在本机，不会上传你的文件。"
+                )
+                AboutRow(
+                    label = "第三方组件",
+                    value = "Jetpack Compose、Coil、Media3、AndroidX DocumentFile"
+                )
             }
         },
         confirmButton = {
-            TextButton(onClick = onOpenProject) {
-                Text("打开项目地址")
+            Row {
+                TextButton(onClick = onOpenProject) {
+                    Text("项目地址")
+                }
+                TextButton(onClick = onOpenIssues) {
+                    Text("问题反馈")
+                }
             }
         },
         dismissButton = {
