@@ -2,6 +2,7 @@ package com.jp.app
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -22,6 +23,18 @@ import com.jp.app.ui.FolderPickerScreen
 import com.jp.app.ui.MediaViewerScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+
+private const val PREF_MEDIA_CACHE_FOLDERS = "media_cache_folders"
+private const val PREF_MEDIA_CACHE_RESPECT_NOMEDIA = "media_cache_respect_nomedia"
+private const val PREF_MEDIA_CACHE_SCANNED = "media_cache_scanned"
+private const val PREF_MEDIA_CACHE_ITEMS = "media_cache_items"
+
+private data class CachedMediaScan(
+    val items: List<MediaItem>,
+    val scanned: Int
+)
 
 class MainActivity : ComponentActivity() {
 
@@ -64,24 +77,37 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var isScanning by remember { mutableStateOf(false) }
     var isViewing by remember { mutableStateOf(false) }
     var isFavoriteBrowsing by remember { mutableStateOf(false) }
-    var mediaItems by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+    val initialCache = remember { loadCachedMediaScan(prefs, folders, respectNomedia) }
+    var mediaItems by remember { mutableStateOf(initialCache?.items?.shuffled() ?: emptyList()) }
     var currentIndex by remember { mutableStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
     var scanMessage by remember { mutableStateOf<String?>(null) }
-    var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
-    var hasScanned by remember { mutableStateOf(false) }
+    var scanProgress by remember {
+        mutableStateOf(
+            initialCache?.let { MediaScanner.ScanProgress(scanned = it.scanned, found = it.items.size) }
+        )
+    }
+    var hasScanned by remember { mutableStateOf(initialCache != null) }
+    var rescanRequest by remember { mutableStateOf(0) }
     var favoriteUris by remember {
         mutableStateOf(prefs.getStringSet("favorite_uris", emptySet())?.toSet() ?: emptySet())
     }
 
     fun saveFolders(newFolders: List<String>) {
+        clearCachedMediaScan(prefs)
         folders = newFolders
         prefs.edit().putStringSet("folder_uris", newFolders.toSet()).apply()
     }
 
     fun saveNomedia(value: Boolean) {
+        clearCachedMediaScan(prefs)
         respectNomedia = value
         prefs.edit().putBoolean("respect_nomedia", value).apply()
+    }
+
+    fun rescanMedia() {
+        clearCachedMediaScan(prefs)
+        rescanRequest++
     }
 
     fun toggleFavorite(item: MediaItem): Set<String> {
@@ -96,7 +122,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         return newFavorites
     }
 
-    LaunchedEffect(folders, respectNomedia) {
+    LaunchedEffect(folders, respectNomedia, rescanRequest) {
         if (folders.isEmpty()) {
             mediaItems = emptyList()
             currentIndex = 0
@@ -109,16 +135,33 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             return@LaunchedEffect
         }
 
+        val cachedScan = loadCachedMediaScan(prefs, folders, respectNomedia)
+        if (cachedScan != null) {
+            mediaItems = cachedScan.items.shuffled()
+            currentIndex = 0
+            hasScanned = true
+            isScanning = false
+            scanProgress = MediaScanner.ScanProgress(
+                scanned = cachedScan.scanned,
+                found = cachedScan.items.size
+            )
+            scanMessage = null
+            return@LaunchedEffect
+        }
+
         isScanning = true
         scanMessage = null
         scanProgress = MediaScanner.ScanProgress(scanned = 0, found = 0)
+        var scannedCount = 0
         try {
             val items = scanner.scan(folders, respectNomedia) { progress ->
+                scannedCount = progress.scanned
                 withContext(Dispatchers.Main) {
                     scanProgress = progress
                 }
             }
             mediaItems = items.shuffled()
+            saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount)
             currentIndex = 0
             hasScanned = true
             if (isFavoriteBrowsing && mediaItems.none { it.uri.toString() in favoriteUris }) {
@@ -135,12 +178,14 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             isFavoriteBrowsing = false
             mediaItems = emptyList()
             hasScanned = true
+            clearCachedMediaScan(prefs)
             scanMessage = "无法读取所选文件夹。请删除该文件夹后重新添加授权。"
         } catch (error: Exception) {
             isViewing = false
             isFavoriteBrowsing = false
             mediaItems = emptyList()
             hasScanned = true
+            clearCachedMediaScan(prefs)
             scanMessage = "扫描失败：${error.localizedMessage ?: "未知错误"}"
         } finally {
             isScanning = false
@@ -250,6 +295,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             respectNomedia = respectNomedia,
             onFoldersChanged = { saveFolders(it) },
             onRespectNomediaChanged = { saveNomedia(it) },
+            onRescan = { rescanMedia() },
             onStartBrowsing = { startBrowsing() },
             onStartFavorites = { startFavoriteBrowsing() },
             isScanning = isScanning,
@@ -272,4 +318,76 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             }
         )
     }
+}
+
+private fun loadCachedMediaScan(
+    prefs: SharedPreferences,
+    folders: List<String>,
+    respectNomedia: Boolean
+): CachedMediaScan? {
+    if (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null) != mediaCacheFoldersKey(folders)) return null
+    if (prefs.getBoolean(PREF_MEDIA_CACHE_RESPECT_NOMEDIA, !respectNomedia) != respectNomedia) return null
+
+    val cacheJson = prefs.getString(PREF_MEDIA_CACHE_ITEMS, null) ?: return null
+    return runCatching {
+        val itemsJson = JSONArray(cacheJson)
+        val items = buildList {
+            for (index in 0 until itemsJson.length()) {
+                val itemJson = itemsJson.getJSONObject(index)
+                add(
+                    MediaItem(
+                        uri = Uri.parse(itemJson.getString("uri")),
+                        name = itemJson.getString("name"),
+                        mimeType = itemJson.getString("mimeType"),
+                        size = itemJson.getLong("size"),
+                        folderUri = Uri.parse(itemJson.getString("folderUri"))
+                    )
+                )
+            }
+        }
+        CachedMediaScan(
+            items = items,
+            scanned = prefs.getInt(PREF_MEDIA_CACHE_SCANNED, items.size)
+        )
+    }.getOrNull()
+}
+
+private fun saveCachedMediaScan(
+    prefs: SharedPreferences,
+    folders: List<String>,
+    respectNomedia: Boolean,
+    items: List<MediaItem>,
+    scanned: Int
+) {
+    val itemsJson = JSONArray()
+    items.forEach { item ->
+        itemsJson.put(
+            JSONObject()
+                .put("uri", item.uri.toString())
+                .put("name", item.name)
+                .put("mimeType", item.mimeType)
+                .put("size", item.size)
+                .put("folderUri", item.folderUri.toString())
+        )
+    }
+
+    prefs.edit()
+        .putString(PREF_MEDIA_CACHE_FOLDERS, mediaCacheFoldersKey(folders))
+        .putBoolean(PREF_MEDIA_CACHE_RESPECT_NOMEDIA, respectNomedia)
+        .putInt(PREF_MEDIA_CACHE_SCANNED, scanned)
+        .putString(PREF_MEDIA_CACHE_ITEMS, itemsJson.toString())
+        .apply()
+}
+
+private fun clearCachedMediaScan(prefs: SharedPreferences) {
+    prefs.edit()
+        .remove(PREF_MEDIA_CACHE_FOLDERS)
+        .remove(PREF_MEDIA_CACHE_RESPECT_NOMEDIA)
+        .remove(PREF_MEDIA_CACHE_SCANNED)
+        .remove(PREF_MEDIA_CACHE_ITEMS)
+        .apply()
+}
+
+private fun mediaCacheFoldersKey(folders: List<String>): String {
+    return folders.sorted().joinToString("\n")
 }

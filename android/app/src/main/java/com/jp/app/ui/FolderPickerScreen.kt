@@ -26,6 +26,7 @@ fun FolderPickerScreen(
     respectNomedia: Boolean,
     onFoldersChanged: (List<String>) -> Unit,
     onRespectNomediaChanged: (Boolean) -> Unit,
+    onRescan: () -> Unit,
     onStartBrowsing: () -> Unit,
     onStartFavorites: () -> Unit,
     isScanning: Boolean,
@@ -150,6 +151,16 @@ fun FolderPickerScreen(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = onRescan,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                enabled = folders.isNotEmpty() && !isScanning
+            ) {
+                Text("重新扫描")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = onStartBrowsing,
