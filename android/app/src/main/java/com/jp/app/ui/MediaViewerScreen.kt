@@ -19,6 +19,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem as ExoMediaItem
 import androidx.media3.common.Player
@@ -49,6 +50,7 @@ fun MediaViewerScreen(
     val item = mediaItems[currentIndex]
     val context = LocalContext.current
     var showControls by remember { mutableStateOf(true) }
+    val folderName = item.folderUri.lastPathSegment ?: item.folderUri.toString()
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (item.isVideo) {
@@ -115,25 +117,55 @@ fun MediaViewerScreen(
                     )
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.Black.copy(alpha = 0.5f))
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = item.name,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            text = if (item.isVideo) "视频" else "图片",
+                            color = Color.White
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        text = item.name,
-                        color = Color.White,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = if (item.isVideo) "视频" else "图片",
-                        color = Color.White
+                        text = "大小：${formatFileSize(item.size)} · 文件夹：$folderName",
+                        color = Color.White.copy(alpha = 0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
         }
+    }
+}
+
+private fun formatFileSize(bytes: Long): String {
+    if (bytes < 0) return "未知"
+
+    val units = listOf("B", "KB", "MB", "GB")
+    var size = bytes.toDouble()
+    var unitIndex = 0
+    while (size >= 1024 && unitIndex < units.lastIndex) {
+        size /= 1024
+        unitIndex++
+    }
+
+    return if (unitIndex == 0) {
+        "${bytes} ${units[unitIndex]}"
+    } else {
+        "%.1f %s".format(size, units[unitIndex])
     }
 }
 
