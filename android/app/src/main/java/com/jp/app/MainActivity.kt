@@ -71,7 +71,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
     var hasScanned by remember { mutableStateOf(false) }
     var favoriteUris by remember {
-        mutableStateOf(prefs.getStringSet("favorite_uris", emptySet()) ?: emptySet())
+        mutableStateOf(prefs.getStringSet("favorite_uris", emptySet())?.toSet() ?: emptySet())
     }
 
     fun saveFolders(newFolders: List<String>) {
@@ -121,6 +121,11 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaItems = items.shuffled()
             currentIndex = 0
             hasScanned = true
+            if (isFavoriteBrowsing && mediaItems.none { it.uri.toString() in favoriteUris }) {
+                isViewing = false
+                isFavoriteBrowsing = false
+                scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
+            }
             if (isViewing && mediaItems.isEmpty()) {
                 isViewing = false
                 isFavoriteBrowsing = false
