@@ -11,8 +11,8 @@ android {
         applicationId = "com.jp.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 5
-        versionName = "beta0.0.5"
+        versionCode = 6
+        versionName = "beta0.0.6"
     }
 
     buildTypes {
@@ -32,6 +32,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 

@@ -80,6 +80,7 @@ jobs:
             - 问题反馈：关于界面可直接打开 GitHub Issues 页面
             - 文档同步：README 补充媒体缓存、重新扫描、关于界面和反馈入口说明
             - 规划存档：新增 feature.md 记录后续修复项和功能建议
-            - 版本元数据：应用版本更新为 beta0.0.5，延续 debug 签名测试包发布
+            - 构建修复：启用 BuildConfig 生成，确保关于界面可读取版本号
+            - 版本元数据：应用版本更新为 beta0.0.6，延续 debug 签名测试包发布
           files: android/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: false
