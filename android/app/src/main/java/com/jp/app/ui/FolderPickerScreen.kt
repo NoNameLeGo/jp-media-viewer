@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jp.app.data.MediaScanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +27,10 @@ fun FolderPickerScreen(
     onFoldersChanged: (List<String>) -> Unit,
     onRespectNomediaChanged: (Boolean) -> Unit,
     onStartBrowsing: () -> Unit,
-    isScanning: Boolean
+    isScanning: Boolean,
+    scanProgress: MediaScanner.ScanProgress?,
+    mediaCount: Int,
+    hasScanned: Boolean
 ) {
     val context = LocalContext.current
 
@@ -135,20 +139,67 @@ fun FolderPickerScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            ScanStatus(
+                isScanning = isScanning,
+                scanProgress = scanProgress,
+                mediaCount = mediaCount,
+                hasScanned = hasScanned,
+                hasFolders = folders.isNotEmpty()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Button(
                 onClick = onStartBrowsing,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                enabled = folders.isNotEmpty() && !isScanning
+                enabled = folders.isNotEmpty() && !isScanning && mediaCount > 0
             ) {
-                if (isScanning) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(Modifier.width(8.dp))
-                }
-                Text(if (isScanning) "扫描中..." else "开始浏览")
+                Text("开始浏览")
             }
+        }
+    }
+}
+
+@Composable
+private fun ScanStatus(
+    isScanning: Boolean,
+    scanProgress: MediaScanner.ScanProgress?,
+    mediaCount: Int,
+    hasScanned: Boolean,
+    hasFolders: Boolean
+) {
+    if (!hasFolders) return
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isScanning) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(12.dp))
+            }
+
+            val text = when {
+                isScanning -> {
+                    val scanned = scanProgress?.scanned ?: 0
+                    val found = scanProgress?.found ?: mediaCount
+                    "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体"
+                }
+                hasScanned && mediaCount > 0 -> "扫描完成：找到 ${mediaCount} 个媒体，可以直接开始浏览"
+                hasScanned -> "扫描完成：没有找到图片或视频"
+                else -> "添加文件夹后会自动扫描"
+            }
+
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

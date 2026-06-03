@@ -9,6 +9,10 @@ import java.util.Locale
 
 class MediaScanner(private val context: Context) {
 
+    private companion object {
+        const val PROGRESS_UPDATE_INTERVAL = 20
+    }
+
     data class ScanProgress(
         val scanned: Int,
         val found: Int,
@@ -19,7 +23,7 @@ class MediaScanner(private val context: Context) {
     suspend fun scan(
         folderUris: List<String>,
         respectNomedia: Boolean,
-        onProgress: (ScanProgress) -> Unit = {}
+        onProgress: suspend (ScanProgress) -> Unit = {}
     ): List<MediaItem> = withContext(Dispatchers.IO) {
         val results = mutableListOf<MediaItem>()
         var scanned = 0
@@ -37,13 +41,13 @@ class MediaScanner(private val context: Context) {
         results.toList()
     }
 
-    private fun scanDirectory(
+    private suspend fun scanDirectory(
         dir: DocumentFile,
         rootUri: Uri,
         respectNomedia: Boolean,
         results: MutableList<MediaItem>,
         scanned: Int,
-        onProgress: (Int) -> Unit
+        onProgress: suspend (Int) -> Unit
     ): Int {
         if (respectNomedia && dir.findFile(".nomedia") != null) return scanned
 
@@ -66,7 +70,9 @@ class MediaScanner(private val context: Context) {
                         )
                     )
                 }
-                onProgress(scannedCount)
+                if (scannedCount % PROGRESS_UPDATE_INTERVAL == 0) {
+                    onProgress(scannedCount)
+                }
             }
         }
         return scannedCount

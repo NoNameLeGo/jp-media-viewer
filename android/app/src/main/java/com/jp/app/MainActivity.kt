@@ -20,7 +20,8 @@ import com.jp.app.data.MediaItem
 import com.jp.app.data.MediaScanner
 import com.jp.app.ui.FolderPickerScreen
 import com.jp.app.ui.MediaViewerScreen
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
 
@@ -52,7 +53,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun MainApp(prefs: SharedPreferences, context: Context) {
-    val scope = rememberCoroutineScope()
     val scanner = remember { MediaScanner(context) }
 
     var folders by remember {
@@ -67,6 +67,8 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var currentIndex by remember { mutableStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
     var scanMessage by remember { mutableStateOf<String?>(null) }
+    var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
+    var hasScanned by remember { mutableStateOf(false) }
 
     fun saveFolders(newFolders: List<String>) {
         folders = newFolders
@@ -78,27 +80,56 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         prefs.edit().putBoolean("respect_nomedia", value).apply()
     }
 
-    fun scanMedia() {
-        scope.launch {
-            isScanning = true
+    LaunchedEffect(folders, respectNomedia) {
+        if (folders.isEmpty()) {
+            mediaItems = emptyList()
+            currentIndex = 0
+            isViewing = false
+            isScanning = false
+            scanProgress = null
+            hasScanned = false
             scanMessage = null
-            try {
-                val items = scanner.scan(folders, respectNomedia)
-                mediaItems = items.shuffled()
-                currentIndex = 0
-                isViewing = mediaItems.isNotEmpty()
-                if (mediaItems.isEmpty()) {
-                    scanMessage = "没有找到图片或视频。请确认所选文件夹包含媒体文件，或尝试关闭 .nomedia 过滤后重新扫描。"
+            return@LaunchedEffect
+        }
+
+        isScanning = true
+        scanMessage = null
+        scanProgress = MediaScanner.ScanProgress(scanned = 0, found = 0)
+        try {
+            val items = scanner.scan(folders, respectNomedia) { progress ->
+                withContext(Dispatchers.Main) {
+                    scanProgress = progress
                 }
-            } catch (_: SecurityException) {
-                isViewing = false
-                scanMessage = "无法读取所选文件夹。请删除该文件夹后重新添加授权。"
-            } catch (error: Exception) {
-                isViewing = false
-                scanMessage = "扫描失败：${error.localizedMessage ?: "未知错误"}"
-            } finally {
-                isScanning = false
             }
+            mediaItems = items.shuffled()
+            currentIndex = 0
+            hasScanned = true
+            if (isViewing && mediaItems.isEmpty()) {
+                isViewing = false
+            }
+        } catch (_: SecurityException) {
+            isViewing = false
+            mediaItems = emptyList()
+            hasScanned = true
+            scanMessage = "无法读取所选文件夹。请删除该文件夹后重新添加授权。"
+        } catch (error: Exception) {
+            isViewing = false
+            mediaItems = emptyList()
+            hasScanned = true
+            scanMessage = "扫描失败：${error.localizedMessage ?: "未知错误"}"
+        } finally {
+            isScanning = false
+        }
+    }
+
+    fun startBrowsing() {
+        if (isScanning) {
+            scanMessage = "正在扫描中，请稍等片刻。"
+        } else if (mediaItems.isEmpty()) {
+            scanMessage = "没有找到图片或视频。请确认所选文件夹包含媒体文件，或尝试关闭 .nomedia 过滤后等待重新扫描。"
+        } else {
+            currentIndex = 0
+            isViewing = true
         }
     }
 
@@ -135,13 +166,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 confirmButton = {
                     androidx.compose.material3.TextButton(onClick = {
                         showSettings = false
-                        scanMedia()
                     }) {
-                        androidx.compose.material3.Text("重新扫描")
-                    }
-                },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { showSettings = false }) {
                         androidx.compose.material3.Text("关闭")
                     }
                 }
@@ -153,8 +178,11 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             respectNomedia = respectNomedia,
             onFoldersChanged = { saveFolders(it) },
             onRespectNomediaChanged = { saveNomedia(it) },
-            onStartBrowsing = { scanMedia() },
-            isScanning = isScanning
+            onStartBrowsing = { startBrowsing() },
+            isScanning = isScanning,
+            scanProgress = scanProgress,
+            mediaCount = mediaItems.size,
+            hasScanned = hasScanned
         )
     }
 
