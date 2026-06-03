@@ -5,9 +5,12 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.jp.app.data.MediaItem
@@ -25,7 +28,12 @@ class MainActivity : ComponentActivity() {
         prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
         setContent {
-            MaterialTheme {
+            val colorScheme = if (isSystemInDarkTheme()) {
+                dynamicDarkColorScheme(this)
+            } else {
+                dynamicLightColorScheme(this)
+            }
+            MaterialTheme(colorScheme = colorScheme) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainApp(prefs, applicationContext)
                 }
