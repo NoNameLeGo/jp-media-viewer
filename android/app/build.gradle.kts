@@ -5,6 +5,7 @@ plugins {
 
 android {
     namespace = "com.jp.app"
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.jp.app"
