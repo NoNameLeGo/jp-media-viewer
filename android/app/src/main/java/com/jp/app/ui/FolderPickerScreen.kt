@@ -91,6 +91,14 @@ fun FolderPickerScreen(
                             },
                             trailingContent = {
                                 IconButton(onClick = {
+                                    try {
+                                        context.contentResolver.releasePersistableUriPermission(
+                                            Uri.parse(uriString),
+                                            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        )
+                                    } catch (_: SecurityException) {
+                                        // Permission may already be gone if Android revoked it.
+                                    }
                                     onFoldersChanged(folders - uriString)
                                 }) {
                                     Icon(Icons.Default.Delete, "移除")

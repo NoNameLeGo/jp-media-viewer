@@ -5,7 +5,7 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.Collections
+import java.util.Locale
 
 class MediaScanner(private val context: Context) {
 
@@ -21,14 +21,14 @@ class MediaScanner(private val context: Context) {
         respectNomedia: Boolean,
         onProgress: (ScanProgress) -> Unit = {}
     ): List<MediaItem> = withContext(Dispatchers.IO) {
-        val results = Collections.synchronizedList(mutableListOf<MediaItem>())
+        val results = mutableListOf<MediaItem>()
         var scanned = 0
 
         for (uriString in folderUris) {
             val treeUri = Uri.parse(uriString)
             val rootDoc = DocumentFile.fromTreeUri(context, treeUri) ?: continue
-            scanDirectory(rootDoc, treeUri, respectNomedia, results, scanned) { file ->
-                scanned = file
+            scanned = scanDirectory(rootDoc, treeUri, respectNomedia, results, scanned) { count ->
+                scanned = count
                 onProgress(ScanProgress(scanned = scanned, found = results.size, currentFile = ""))
             }
         }
@@ -44,16 +44,18 @@ class MediaScanner(private val context: Context) {
         results: MutableList<MediaItem>,
         scanned: Int,
         onProgress: (Int) -> Unit
-    ) {
-        if (respectNomedia && dir.findFile(".nomedia") != null) return
+    ): Int {
+        if (respectNomedia && dir.findFile(".nomedia") != null) return scanned
 
         val files = dir.listFiles()
+        var scannedCount = scanned
         for (file in files) {
             if (file.isDirectory) {
-                scanDirectory(file, rootUri, respectNomedia, results, scanned, onProgress)
+                scannedCount = scanDirectory(file, rootUri, respectNomedia, results, scannedCount, onProgress)
             } else if (file.isFile) {
-                val mime = file.type ?: ""
-                if (mime.startsWith("image/") || mime.startsWith("video/")) {
+                scannedCount++
+                val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
+                if (isSupportedMedia(mime)) {
                     results.add(
                         MediaItem(
                             uri = file.uri,
@@ -64,7 +66,31 @@ class MediaScanner(private val context: Context) {
                         )
                     )
                 }
+                onProgress(scannedCount)
             }
+        }
+        return scannedCount
+    }
+
+    private fun isSupportedMedia(mimeType: String): Boolean {
+        return mimeType.startsWith("image/") || mimeType.startsWith("video/")
+    }
+
+    private fun inferMimeType(fileName: String?): String {
+        return when (fileName?.substringAfterLast('.', "")?.lowercase(Locale.ROOT)) {
+            "jpg", "jpeg" -> "image/jpeg"
+            "png" -> "image/png"
+            "gif" -> "image/gif"
+            "webp" -> "image/webp"
+            "bmp" -> "image/bmp"
+            "heic", "heif" -> "image/heif"
+            "mp4" -> "video/mp4"
+            "mkv" -> "video/x-matroska"
+            "webm" -> "video/webm"
+            "mov" -> "video/quicktime"
+            "avi" -> "video/x-msvideo"
+            "3gp" -> "video/3gpp"
+            else -> ""
         }
     }
 }
