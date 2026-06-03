@@ -79,6 +79,6 @@ jobs:
             - 手势浏览：新增下滑上一张，保留上滑下一张和单击显示/隐藏控制栏
             - 文件详情：长按媒体可查看文件详情，底部显示文件大小和所属文件夹
             - 扫描提示：优化扫描进度、空结果原因和文件夹授权失效提示
-            - 项目文档：README 更新为当前功能说明，许可证改为 GPL v3 or later
+            - 项目文档：README 更新为当前功能说明，许可证改为 AGPL v3
           files: android/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: false
