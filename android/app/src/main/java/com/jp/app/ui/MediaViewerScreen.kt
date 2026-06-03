@@ -77,7 +77,7 @@ fun MediaViewerScreen(
                         do {
                             val event = awaitPointerEvent(PointerEventPass.Main)
                             val change = event.changes.firstOrNull() ?: break
-                            val dy = change.positionChanged().y
+                            val dy = change.position.y - change.previousPosition.y
                             totalDy += dy
                             change.consume()
                         } while (event.changes.any { it.pressed })
