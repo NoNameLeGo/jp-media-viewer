@@ -69,6 +69,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var scanMessage by remember { mutableStateOf<String?>(null) }
     var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
     var hasScanned by remember { mutableStateOf(false) }
+    var favoriteUris by remember {
+        mutableStateOf(prefs.getStringSet("favorite_uris", emptySet()) ?: emptySet())
+    }
 
     fun saveFolders(newFolders: List<String>) {
         folders = newFolders
@@ -78,6 +81,17 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     fun saveNomedia(value: Boolean) {
         respectNomedia = value
         prefs.edit().putBoolean("respect_nomedia", value).apply()
+    }
+
+    fun toggleFavorite(item: MediaItem) {
+        val uriString = item.uri.toString()
+        val newFavorites = if (uriString in favoriteUris) {
+            favoriteUris - uriString
+        } else {
+            favoriteUris + uriString
+        }
+        favoriteUris = newFavorites
+        prefs.edit().putStringSet("favorite_uris", newFavorites).apply()
     }
 
     LaunchedEffect(folders, respectNomedia) {
@@ -142,6 +156,13 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                     currentIndex = (currentIndex + 1) % mediaItems.size
                 }
             },
+            onPrevious = {
+                if (mediaItems.isNotEmpty()) {
+                    currentIndex = (currentIndex - 1 + mediaItems.size) % mediaItems.size
+                }
+            },
+            isFavorite = mediaItems[currentIndex].uri.toString() in favoriteUris,
+            onToggleFavorite = { toggleFavorite(mediaItems[currentIndex]) },
             onBack = {
                 isViewing = false
             },

@@ -3,8 +3,8 @@ package com.jp.app.ui
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.layout.ContentScale
@@ -29,7 +28,6 @@ import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.jp.app.data.MediaItem
-import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +35,9 @@ fun MediaViewerScreen(
     mediaItems: List<MediaItem>,
     currentIndex: Int,
     onNext: () -> Unit,
+    onPrevious: () -> Unit,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onBack: () -> Unit,
     onSettings: () -> Unit
 ) {
@@ -50,6 +51,7 @@ fun MediaViewerScreen(
     val item = mediaItems[currentIndex]
     val context = LocalContext.current
     var showControls by remember { mutableStateOf(true) }
+    var showDetails by remember { mutableStateOf(false) }
     val folderName = item.folderUri.lastPathSegment ?: item.folderUri.toString()
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
@@ -71,23 +73,28 @@ fun MediaViewerScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        var totalDy = 0f
-                        do {
-                            val event = awaitPointerEvent(PointerEventPass.Main)
-                            val change = event.changes.firstOrNull() ?: break
-                            val dy = change.position.y - change.previousPosition.y
-                            totalDy += dy
+                    detectTapGestures(
+                        onTap = { showControls = !showControls },
+                        onDoubleTap = { onToggleFavorite() },
+                        onLongPress = { showDetails = true }
+                    )
+                }
+                .pointerInput(Unit) {
+                    var totalDy = 0f
+                    detectVerticalDragGestures(
+                        onDragStart = { totalDy = 0f },
+                        onVerticalDrag = { change, dragAmount ->
+                            totalDy += dragAmount
                             change.consume()
-                        } while (event.changes.any { it.pressed })
-
-                        if (abs(totalDy) < 30f) {
-                            showControls = !showControls
-                        } else if (totalDy < -60f) {
-                            onNext()
+                        },
+                        onDragEnd = {
+                            if (totalDy < -60f) {
+                                onNext()
+                            } else if (totalDy > 60f) {
+                                onPrevious()
+                            }
                         }
-                    }
+                    )
                 }
         )
 
@@ -100,7 +107,10 @@ fun MediaViewerScreen(
             Column {
                 TopAppBar(
                     title = {
-                        Text("${currentIndex + 1} / ${mediaItems.size}", color = Color.White)
+                        Text(
+                            text = "${currentIndex + 1} / ${mediaItems.size}${if (isFavorite) " · 已收藏" else ""}",
+                            color = Color.White
+                        )
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -147,6 +157,26 @@ fun MediaViewerScreen(
                     )
                 }
             }
+        }
+
+        if (showDetails) {
+            AlertDialog(
+                onDismissRequest = { showDetails = false },
+                title = { Text("文件详情") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("文件名：${item.name}")
+                        Text("大小：${formatFileSize(item.size)}")
+                        Text("文件夹：$folderName")
+                        Text("状态：${if (isFavorite) "已收藏" else "未收藏"}")
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showDetails = false }) {
+                        Text("关闭")
+                    }
+                }
+            )
         }
     }
 }
