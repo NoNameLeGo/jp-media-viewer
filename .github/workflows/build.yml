@@ -3,7 +3,7 @@ name: Build APK
 on:
   push:
     branches: [main, develop]
-    tags: ["v*"]
+    tags: ["v*", "beta*"]
   pull_request:
     branches: [main]
 
@@ -39,7 +39,7 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -70,6 +70,6 @@ jobs:
         with:
           name: Release ${{ github.ref_name }}
           tag_name: ${{ github.ref }}
-          body_path: CHANGELOG.md
+          body: "APK 自动构建版本：${{ github.ref_name }}"
           files: android/app/build/outputs/apk/release/app-release-unsigned.apk
           fail_on_unmatched_files: false
