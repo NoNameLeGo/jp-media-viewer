@@ -190,8 +190,14 @@ private fun ScanStatus(
                     val found = scanProgress?.found ?: mediaCount
                     "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体"
                 }
-                hasScanned && mediaCount > 0 -> "扫描完成：找到 ${mediaCount} 个媒体，可以直接开始浏览"
-                hasScanned -> "扫描完成：没有找到图片或视频"
+                hasScanned && mediaCount > 0 -> {
+                    val scanned = scanProgress?.scanned ?: 0
+                    "扫描完成：已检查 ${scanned} 个文件，找到 ${mediaCount} 个媒体，可以直接开始浏览"
+                }
+                hasScanned -> {
+                    val scanned = scanProgress?.scanned ?: 0
+                    "扫描完成：已检查 ${scanned} 个文件，找到 0 个媒体\n可能原因：.nomedia 过滤、目录无媒体、文件夹授权失效"
+                }
                 else -> "添加文件夹后会自动扫描"
             }
 

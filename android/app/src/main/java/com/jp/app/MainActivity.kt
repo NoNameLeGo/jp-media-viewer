@@ -126,7 +126,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         if (isScanning) {
             scanMessage = "正在扫描中，请稍等片刻。"
         } else if (mediaItems.isEmpty()) {
-            scanMessage = "没有找到图片或视频。请确认所选文件夹包含媒体文件，或尝试关闭 .nomedia 过滤后等待重新扫描。"
+            scanMessage = "没有找到图片或视频。可能原因：\n1. 所选目录没有支持的媒体文件\n2. .nomedia 过滤隐藏了部分目录\n3. 文件夹授权已失效，请删除后重新添加"
         } else {
             currentIndex = 0
             isViewing = true
