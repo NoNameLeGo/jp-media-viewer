@@ -1,5 +1,6 @@
 package com.jp.app.ui
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jp.app.BuildConfig
 import com.jp.app.data.MediaScanner
+
+private const val PROJECT_URL = "https://github.com/NoNameLeGo/jp-media-viewer"
+private const val DEVELOPER_NAME = "NoNameLeGo"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +42,7 @@ fun FolderPickerScreen(
     hasScanned: Boolean
 ) {
     val context = LocalContext.current
+    var showAbout by remember { mutableStateOf(false) }
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -53,6 +60,11 @@ fun FolderPickerScreen(
         topBar = {
             TopAppBar(
                 title = { Text("随机浏览") },
+                actions = {
+                    IconButton(onClick = { showAbout = true }) {
+                        Icon(Icons.Default.Info, contentDescription = "关于")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
@@ -180,6 +192,55 @@ fun FolderPickerScreen(
                 Text("查看收藏（$favoriteCount）")
             }
         }
+    }
+
+    if (showAbout) {
+        AboutDialog(
+            onDismiss = { showAbout = false },
+            onOpenProject = {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PROJECT_URL)))
+            }
+        )
+    }
+}
+
+@Composable
+private fun AboutDialog(
+    onDismiss: () -> Unit,
+    onOpenProject: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("关于 JP Media Viewer") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                AboutRow(label = "版本号", value = BuildConfig.VERSION_NAME)
+                AboutRow(label = "开发者", value = DEVELOPER_NAME)
+                AboutRow(label = "项目地址", value = PROJECT_URL)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onOpenProject) {
+                Text("打开项目地址")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
+}
+
+@Composable
+private fun AboutRow(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(text = value, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
