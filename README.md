@@ -26,7 +26,7 @@
 
 - [ ] **媒体加载失败提示**：浏览时如果图片或视频文件已删除、授权失效或无法打开，提示重新扫描或移出列表。
 - [ ] **排序 / 随机模式切换**：支持随机、文件名、修改时间、文件夹顺序等浏览模式。
-- [ ] **图片缩放和平移**：支持双指缩放、拖动查看大图细节。
+- [x] **图片缩放和平移**：支持双指缩放、拖动查看大图细节。
 - [ ] **收藏管理增强**：支持批量取消收藏、只显示失效收藏、按文件夹筛选收藏。
 - [ ] **当前文件操作**：支持分享、复制路径、用其他应用打开、在文件管理器中定位。
 - [x] **扫描统计详情**：显示每个文件夹扫描到的媒体数、检查文件数、跳过 `.nomedia` 目录数、失败目录和耗时。
@@ -83,7 +83,7 @@ cd android
 .\gradlew.bat assembleDebug
 ```
 
-Debug：`android/app/build/outputs/apk/debug/jp-media-viewer-beta0.1.3-debug.apk`；Release：`android/app/build/outputs/apk/release/jp-media-viewer-beta0.1.3-release.apk`
+Debug：`android/app/build/outputs/apk/debug/jp-media-viewer-beta0.1.4-debug.apk`；Release：`android/app/build/outputs/apk/release/jp-media-viewer-beta0.1.4-release.apk`
 
 ## 技术栈
 

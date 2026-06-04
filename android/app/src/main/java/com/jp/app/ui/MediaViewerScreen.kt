@@ -9,6 +9,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
@@ -19,12 +23,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
@@ -74,6 +80,9 @@ fun MediaViewerScreen(
     var showControls by remember { mutableStateOf(true) }
     var showDetails by remember { mutableStateOf(false) }
     var isSwipeAnimating by remember { mutableStateOf(false) }
+    var imageScale by remember(item.uri) { mutableStateOf(1f) }
+    var imageOffset by remember(item.uri) { mutableStateOf(Offset.Zero) }
+    val isImageZoomed = item.isImage && imageScale > 1.01f
     val folderName = item.folderUri.lastPathSegment ?: item.folderUri.toString()
     val swipeScale = if (contentOffsetY.value < 0f) {
         (1f + contentOffsetY.value / 1000f).coerceAtLeast(0.9f)
@@ -83,7 +92,18 @@ fun MediaViewerScreen(
     val swipeAlpha = (1f - abs(contentOffsetY.value) / 1600f).coerceAtLeast(0.7f)
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        val screenWidthPx = with(density) { maxWidth.toPx() }
         val screenHeightPx = with(density) { maxHeight.toPx() }
+
+        fun clampImageOffset(offset: Offset, scale: Float): Offset {
+            if (scale <= 1f) return Offset.Zero
+            val maxX = screenWidthPx * (scale - 1f) / 2f
+            val maxY = screenHeightPx * (scale - 1f) / 2f
+            return Offset(
+                x = offset.x.coerceIn(-maxX, maxX),
+                y = offset.y.coerceIn(-maxY, maxY)
+            )
+        }
         val previewDirection = when {
             contentOffsetY.value < 0f -> 1
             contentOffsetY.value > 0f -> -1
@@ -123,7 +143,16 @@ fun MediaViewerScreen(
         ) {
             MediaSurface(
                 item = item,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        if (item.isImage) {
+                            scaleX = imageScale
+                            scaleY = imageScale
+                            translationX = imageOffset.x
+                            translationY = imageOffset.y
+                        }
+                    },
                 playVideo = true,
                 onLoadError = onMediaLoadError
             )
@@ -139,15 +168,44 @@ fun MediaViewerScreen(
                         onLongPress = { showDetails = true }
                     )
                 }
-                .pointerInput(Unit) {
+                .pointerInput(item.uri, item.isImage) {
+                    if (!item.isImage) return@pointerInput
+
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        do {
+                            val event = awaitPointerEvent()
+                            val pressedChanges = event.changes.filter { it.pressed }
+                            val shouldTransform = pressedChanges.size > 1 || imageScale > 1f
+                            if (shouldTransform) {
+                                val zoomChange = if (pressedChanges.size > 1) event.calculateZoom() else 1f
+                                val panChange = if (pressedChanges.size > 1) {
+                                    event.calculatePan()
+                                } else {
+                                    pressedChanges.firstOrNull()?.positionChange() ?: Offset.Zero
+                                }
+                                val newScale = (imageScale * zoomChange).coerceIn(1f, 4f)
+                                imageScale = newScale
+                                imageOffset = clampImageOffset(imageOffset + panChange, newScale)
+                                event.changes.forEach { it.consume() }
+                            }
+                        } while (event.changes.any { it.pressed })
+
+                        if (imageScale <= 1.01f) {
+                            imageScale = 1f
+                            imageOffset = Offset.Zero
+                        }
+                    }
+                }
+                .pointerInput(isImageZoomed) {
                     var totalDy = 0f
                     detectVerticalDragGestures(
                         onDragStart = {
                             totalDy = 0f
-                            showControls = false
+                            if (!isImageZoomed) showControls = false
                         },
                         onVerticalDrag = { change, dragAmount ->
-                            if (!isSwipeAnimating) {
+                            if (!isSwipeAnimating && !isImageZoomed) {
                                 totalDy += dragAmount
                                 change.consume()
                                 scope.launch {
@@ -156,7 +214,7 @@ fun MediaViewerScreen(
                             }
                         },
                         onDragEnd = {
-                            if (!isSwipeAnimating) {
+                            if (!isSwipeAnimating && !isImageZoomed) {
                                 scope.launch {
                                     when {
                                         totalDy < -60f -> {
@@ -190,11 +248,13 @@ fun MediaViewerScreen(
                             }
                         },
                         onDragCancel = {
-                            scope.launch {
-                                contentOffsetY.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(stiffness = 2000f, dampingRatio = 0.85f)
-                                )
+                            if (!isImageZoomed) {
+                                scope.launch {
+                                    contentOffsetY.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(stiffness = 2000f, dampingRatio = 0.85f)
+                                    )
+                                }
                             }
                         }
                     )
