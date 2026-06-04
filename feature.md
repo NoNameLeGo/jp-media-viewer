@@ -18,23 +18,35 @@
 
    选择文件夹时只有在 `takePersistableUriPermission(...)` 成功后才会加入列表，失败时会提示授权失败。
 
+5. 调整备份策略
+
+   `AndroidManifest.xml` 保持 `android:allowBackup="false"`，并增加 `backup_rules.xml` 与 `data_extraction_rules.xml`，显式排除保存文件夹授权 URI、收藏 URI 和媒体缓存的 `settings` 偏好文件。
+
+6. 精简 SAF 场景下的媒体读取权限
+
+   已确认当前 manifest 没有 `READ_EXTERNAL_STORAGE`、`READ_MEDIA_IMAGES`、`READ_MEDIA_VIDEO` 等媒体权限；应用继续只依赖 Storage Access Framework 的文件夹授权。
+
+7. 改进发布说明维护方式
+
+   GitHub Actions 已改为从 `.github/release-notes.md` 读取 release notes，避免在 workflow 中维护大段硬编码说明。
+
+8. 增加媒体加载失败提示
+
+   图片解码失败或视频播放失败时会显示“媒体读取失败”提示，并提供“重新扫描”操作刷新媒体列表。
+
 ## 建议后续修复
 
-1. 调整备份策略
+1. 正式发布签名
 
-   `AndroidManifest.xml` 已关闭应用备份，避免文件夹授权 URI、收藏 URI 和媒体缓存恢复到新设备后失效，也避免将本地媒体路径类信息纳入备份范围。
+   目前自动发布的是 debug APK。公开分发前建议增加正式 keystore 签名、release APK/AAB 和版本 changelog。
 
-2. 精简 SAF 场景下的媒体读取权限
+2. 缓存管理
 
-   应用主要通过 Storage Access Framework 的文件夹授权读取媒体，通常不需要 `READ_EXTERNAL_STORAGE`、`READ_MEDIA_IMAGES`、`READ_MEDIA_VIDEO`。建议确认没有 MediaStore 全盘扫描需求后移除这些权限，降低权限面。
+   设置页增加清除媒体缓存、清除收藏、查看缓存大小。
 
-3. 改进发布说明维护方式
+3. 扫描统计详情
 
-   GitHub Actions 里的 Release notes 仍是硬编码文本。建议后续改为从 `CHANGELOG.md` 或版本片段读取，避免发新版 tag 时沿用旧内容。
-
-4. 增加媒体加载失败提示
-
-   当缓存中的文件已删除、权限失效、图片解码失败或视频播放失败时，显示明确提示，并提供“重新扫描”。
+   显示每个文件夹找到多少媒体、跳过多少 `.nomedia` 目录、扫描耗时和失败目录。
 
 ## 功能推荐
 
@@ -54,22 +66,10 @@
 
    提供分享当前图片/视频、复制文件名、复制 URI、尝试用系统应用打开等操作。
 
-5. 扫描统计详情
-
-   显示每个文件夹找到多少媒体、跳过多少 `.nomedia` 目录、扫描耗时和失败目录。
-
-6. 缓存管理
-
-   设置页增加清除媒体缓存、清除收藏、查看缓存大小。
-
-7. 多文件夹分组浏览
+5. 多文件夹分组浏览
 
    支持只浏览某一个已添加文件夹，或浏览全部文件夹。
 
-8. 视频播放控制
+6. 视频播放控制
 
    增加暂停/播放、进度条、静音、倍速等基础控制。
-
-9. 正式发布签名
-
-   目前自动发布的是 debug APK。公开分发前建议增加正式 keystore 签名、release APK/AAB 和版本 changelog。
