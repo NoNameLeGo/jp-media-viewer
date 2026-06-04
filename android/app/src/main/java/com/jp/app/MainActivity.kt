@@ -446,7 +446,8 @@ private fun loadCachedMediaScan(
                         name = itemJson.getString("name"),
                         mimeType = itemJson.getString("mimeType"),
                         size = itemJson.getLong("size"),
-                        folderUri = Uri.parse(itemJson.getString("folderUri"))
+                        folderUri = Uri.parse(itemJson.getString("folderUri")),
+                        modifiedAt = itemJson.optLong("modifiedAt", 0L)
                     )
                 )
             }
@@ -474,6 +475,7 @@ private fun saveCachedMediaScan(
                 .put("mimeType", item.mimeType)
                 .put("size", item.size)
                 .put("folderUri", item.folderUri.toString())
+                .put("modifiedAt", item.modifiedAt)
         )
     }
 

@@ -7,7 +7,8 @@ data class MediaItem(
     val name: String,
     val mimeType: String,
     val size: Long,
-    val folderUri: Uri
+    val folderUri: Uri,
+    val modifiedAt: Long
 ) {
     val isVideo: Boolean get() = mimeType.startsWith("video/")
     val isImage: Boolean get() = mimeType.startsWith("image/")
