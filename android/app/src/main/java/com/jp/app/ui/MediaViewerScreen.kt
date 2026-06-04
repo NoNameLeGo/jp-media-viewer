@@ -205,64 +205,69 @@ fun MediaViewerScreen(
             visible = showControls,
             enter = fadeIn() + slideInVertically { -it },
             exit = fadeOut() + slideOutVertically { -it },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.align(Alignment.TopCenter)
         ) {
-            Column {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = "${currentIndex + 1} / ${mediaItems.size}${if (isFavoriteBrowsing) " · 收藏" else if (isFavorite) " · 已收藏" else ""}",
-                            color = Color.White
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, "返回", tint = Color.White)
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.Default.Settings, "设置", tint = Color.White)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Black.copy(alpha = 0.5f)
-                    )
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = item.name,
-                            color = Color.White,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        Text(
-                            text = if (item.isVideo) "视频" else "图片",
-                            color = Color.White
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
+            TopAppBar(
+                title = {
                     Text(
-                        text = "大小：${formatFileSize(item.size)} · 文件夹：$folderName",
-                        color = Color.White.copy(alpha = 0.75f),
+                        text = "${currentIndex + 1} / ${mediaItems.size}${if (isFavoriteBrowsing) " · 收藏" else if (isFavorite) " · 已收藏" else ""}",
+                        color = Color.White
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, "返回", tint = Color.White)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onSettings) {
+                        Icon(Icons.Default.Settings, "设置", tint = Color.White)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Black.copy(alpha = 0.5f)
+                )
+            )
+        }
+
+        AnimatedVisibility(
+            visible = showControls,
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = item.name,
+                        color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.clickable {
-                            clipboardManager.setText(AnnotatedString(folderName))
-                            Toast.makeText(context, "已复制文件夹名称", Toast.LENGTH_SHORT).show()
-                        }
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        text = if (item.isVideo) "视频" else "图片",
+                        color = Color.White
                     )
                 }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "大小：${formatFileSize(item.size)} · 文件夹：$folderName",
+                    color = Color.White.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.clickable {
+                        clipboardManager.setText(AnnotatedString(folderName))
+                        Toast.makeText(context, "已复制文件夹名称", Toast.LENGTH_SHORT).show()
+                    }
+                )
             }
         }
 

@@ -29,7 +29,7 @@ Run from `android/`:
 - `./gradlew assembleDebug`
 - Windows: `gradlew.bat assembleDebug`
 - CI runs `./gradlew assembleDebug --no-daemon`
-- Output APKs: debug `app/build/outputs/apk/debug/jp-media-viewer-beta0.1.0-debug.apk`; release `app/build/outputs/apk/release/jp-media-viewer-beta0.1.0-release.apk`
+- Output APKs: debug `app/build/outputs/apk/debug/jp-media-viewer-beta0.1.1-debug.apk`; release `app/build/outputs/apk/release/jp-media-viewer-beta0.1.1-release.apk`
 
 ## Code Conventions & Common Patterns
 - **UI stack:** Jetpack Compose + Material3. Screens are composables in `ui/`.
