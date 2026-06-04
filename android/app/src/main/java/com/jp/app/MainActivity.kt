@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
+import android.widget.Toast
 import android.os.Bundle
 import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
@@ -299,7 +300,14 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             },
             isFavorite = visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)].uri.toString() in favoriteUris,
             onToggleFavorite = {
-                val newFavorites = toggleFavorite(visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)])
+                val currentItem = visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)]
+                val wasFavorite = currentItem.uri.toString() in favoriteUris
+                val newFavorites = toggleFavorite(currentItem)
+                Toast.makeText(
+                    context,
+                    if (wasFavorite) "已取消收藏" else "已收藏",
+                    Toast.LENGTH_SHORT
+                ).show()
                 if (isFavoriteBrowsing) {
                     val remainingCount = mediaItems.count { it.uri.toString() in newFavorites }
                     if (remainingCount == 0) {
