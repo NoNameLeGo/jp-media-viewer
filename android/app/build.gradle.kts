@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -39,12 +41,11 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.10"
     }
-}
 
-androidComponents {
-    onVariants { variant ->
-        variant.outputs.forEach { output ->
-            output.outputFileName.set("jp-media-viewer-${output.versionName.get()}-${variant.buildType}.apk")
+    applicationVariants.all {
+        outputs.all {
+            val output = this as BaseVariantOutputImpl
+            output.outputFileName = "jp-media-viewer-${versionName}-${buildType.name}.apk"
         }
     }
 }
