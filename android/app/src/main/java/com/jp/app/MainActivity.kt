@@ -24,6 +24,7 @@ import com.jp.app.data.MediaItem
 import com.jp.app.data.MediaScanner
 import com.jp.app.ui.FolderPickerScreen
 import com.jp.app.ui.MediaViewerScreen
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -104,6 +105,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     }
     fun saveFolders(newFolders: List<String>) {
         clearCachedMediaScan(prefs)
+        initialCache.value = null
         mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         folders = newFolders
         prefs.edit().putStringSet("folder_uris", newFolders.toSet()).apply()
@@ -111,6 +113,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 
     fun saveNomedia(value: Boolean) {
         clearCachedMediaScan(prefs)
+        initialCache.value = null
         mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         respectNomedia = value
         prefs.edit().putBoolean("respect_nomedia", value).apply()
@@ -118,6 +121,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 
     fun rescanMedia() {
         clearCachedMediaScan(prefs)
+        initialCache.value = null
         mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         rescanRequest++
     }
@@ -192,10 +196,14 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 
             initialCache.value = null
             clearCachedMediaScan(prefs)
+            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+
         }
 
         isScanning = true
+        hasScanned = false
         scanMessage = null
+        scanSummary = null
         scanProgress = MediaScanner.ScanProgress(scanned = 0, found = 0)
         try {
             val scanResult = scanner.scan(folders, respectNomedia) { progress ->
@@ -221,12 +229,16 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 isViewing = false
                 isFavoriteBrowsing = false
             }
+        } catch (error: CancellationException) {
+            throw error
         } catch (_: SecurityException) {
             isViewing = false
             isFavoriteBrowsing = false
             mediaItems = emptyList()
             hasScanned = true
             clearCachedMediaScan(prefs)
+            initialCache.value = null
+            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
             scanMessage = "无法读取所选文件夹。请删除该文件夹后重新添加授权。"
         } catch (error: Exception) {
             isViewing = false
@@ -234,6 +246,8 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaItems = emptyList()
             hasScanned = true
             clearCachedMediaScan(prefs)
+            initialCache.value = null
+            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
             scanMessage = "扫描失败：${error.localizedMessage ?: "未知错误"}"
         } finally {
             isScanning = false
