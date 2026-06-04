@@ -11,8 +11,8 @@ android {
         applicationId = "com.jp.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "beta0.0.6"
+        versionCode = 7
+        versionName = "beta0.0.7"
     }
 
     buildTypes {
@@ -38,6 +38,14 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.10"
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("jp-media-viewer-${output.versionName.get()}-${variant.buildType}.apk")
+        }
     }
 }
 
