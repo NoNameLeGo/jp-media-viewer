@@ -38,6 +38,10 @@
 
    Actions 已改为从 GitHub Secrets 还原 release keystore，并在 tag 发布时构建签名 release APK。beta0.0.8 是第一版稳定 release 签名 APK；从该版本之后，同签名 release APK 可以直接覆盖安装。
 
+10. 复制文件夹名称
+
+   浏览页底部“文件夹”信息支持点击复制当前媒体所在文件夹名称，并在复制成功后显示提示。
+
 ## 建议后续修复
 
 1. 缓存管理

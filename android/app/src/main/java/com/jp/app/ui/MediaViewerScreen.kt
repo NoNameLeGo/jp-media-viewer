@@ -1,12 +1,14 @@
 package com.jp.app.ui
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
@@ -24,8 +26,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.media3.common.MediaItem as ExoMediaItem
@@ -62,6 +66,8 @@ fun MediaViewerScreen(
     }
 
     val item = mediaItems[currentIndex]
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val contentOffsetY = remember { Animatable(0f) }
@@ -250,7 +256,11 @@ fun MediaViewerScreen(
                         color = Color.White.copy(alpha = 0.75f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.clickable {
+                            clipboardManager.setText(AnnotatedString(folderName))
+                            Toast.makeText(context, "已复制文件夹名称", Toast.LENGTH_SHORT).show()
+                        }
                     )
                 }
             }
