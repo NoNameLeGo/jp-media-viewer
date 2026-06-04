@@ -83,7 +83,7 @@ cd android
 .\gradlew.bat assembleDebug
 ```
 
-Debug：`android/app/build/outputs/apk/debug/jp-media-viewer-beta0.1.5-debug.apk`；Release：`android/app/build/outputs/apk/release/jp-media-viewer-beta0.1.5-release.apk`
+Debug：`android/app/build/outputs/apk/debug/jp-media-viewer-beta0.1.5-fix-debug.apk`；Release：`android/app/build/outputs/apk/release/jp-media-viewer-beta0.1.5-fix-release.apk`
 
 ## 技术栈
 
