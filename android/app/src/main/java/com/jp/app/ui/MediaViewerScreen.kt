@@ -47,6 +47,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.jp.app.data.MediaItem
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -339,6 +343,7 @@ fun MediaViewerScreen(
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("文件名：${item.name}")
+                        Text("日期：${formatModifiedDate(item.modifiedAt)}")
                         Text("大小：${formatFileSize(item.size)}")
                         Text("文件夹：$folderName")
                         Text("状态：${if (isFavorite) "已收藏" else "未收藏"}")
@@ -397,6 +402,16 @@ private fun formatFileSize(bytes: Long): String {
         "%.1f %s".format(size, units[unitIndex])
     }
 }
+
+private val detailDateFormatter: DateTimeFormatter = DateTimeFormatter
+    .ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
+    .withZone(ZoneId.systemDefault())
+
+private fun formatModifiedDate(modifiedAt: Long): String {
+    if (modifiedAt <= 0L) return "未知"
+    return detailDateFormatter.format(Instant.ofEpochMilli(modifiedAt))
+}
+
 
 @Composable
 fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier, onLoadError: () -> Unit) {
