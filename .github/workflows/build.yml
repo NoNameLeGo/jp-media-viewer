@@ -64,9 +64,21 @@ jobs:
         run: chmod +x gradlew
         working-directory: ./android
 
-      - name: Build installable debug APK
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Restore release keystore
+        run: |
+          echo "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode > app/release.jks
         working-directory: ./android
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+
+      - name: Build signed release APK
+        run: ./gradlew assembleRelease --no-daemon
+        working-directory: ./android
+        env:
+          ANDROID_RELEASE_STORE_FILE: release.jks
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -74,5 +86,5 @@ jobs:
           name: Release ${{ github.ref_name }}
           tag_name: ${{ github.ref }}
           body_path: .github/release-notes.md
-          files: android/app/build/outputs/apk/debug/jp-media-viewer-*-debug.apk
+          files: android/app/build/outputs/apk/release/jp-media-viewer-*-release.apk
           fail_on_unmatched_files: false

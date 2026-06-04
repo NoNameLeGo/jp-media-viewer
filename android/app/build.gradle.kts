@@ -13,12 +13,22 @@ android {
         applicationId = "com.jp.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 7
-        versionName = "beta0.0.7"
+        versionCode = 8
+        versionName = "beta0.0.8"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = System.getenv("ANDROID_RELEASE_STORE_FILE")?.let { file(it) }
+            storePassword = System.getenv("ANDROID_RELEASE_STORE_PASSWORD")
+            keyAlias = System.getenv("ANDROID_RELEASE_KEY_ALIAS")
+            keyPassword = System.getenv("ANDROID_RELEASE_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

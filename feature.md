@@ -34,17 +34,17 @@
 
    图片解码失败或视频播放失败时会显示“媒体读取失败”提示，并提供“重新扫描”操作刷新媒体列表。
 
+9. 正式发布签名
+
+   Actions 已改为从 GitHub Secrets 还原 release keystore，并在 tag 发布时构建签名 release APK。beta0.0.8 是第一版稳定 release 签名 APK；从该版本之后，同签名 release APK 可以直接覆盖安装。
+
 ## 建议后续修复
 
-1. 正式发布签名
-
-   目前自动发布的是 debug APK。公开分发前建议增加正式 keystore 签名、release APK/AAB 和版本 changelog。
-
-2. 缓存管理
+1. 缓存管理
 
    设置页增加清除媒体缓存、清除收藏、查看缓存大小。
 
-3. 扫描统计详情
+2. 扫描统计详情
 
    显示每个文件夹找到多少媒体、跳过多少 `.nomedia` 目录、扫描耗时和失败目录。
 
