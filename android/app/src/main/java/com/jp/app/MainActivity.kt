@@ -86,6 +86,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var scanMessage by remember { mutableStateOf<String?>(null) }
     var mediaLoadError by remember { mutableStateOf(false) }
     var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
+    var scanSummary by remember { mutableStateOf<MediaScanner.ScanSummary?>(null) }
     var hasScanned by remember { mutableStateOf(false) }
     var rescanRequest by remember { mutableStateOf(0) }
     var mediaCacheSizeBytes by remember { mutableStateOf(calculateMediaCacheSizeBytes(prefs)) }
@@ -158,6 +159,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             isFavoriteBrowsing = false
             isScanning = false
             scanProgress = null
+            scanSummary = null
             hasScanned = false
             scanMessage = null
             return@LaunchedEffect
@@ -181,6 +183,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                     scanned = cachedScan.scanned,
                     found = accessibleItems.size
                 )
+                scanSummary = cachedScan.toScanSummary(folders)
                 scanMessage = null
                 return@LaunchedEffect
             }
@@ -192,17 +195,17 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         isScanning = true
         scanMessage = null
         scanProgress = MediaScanner.ScanProgress(scanned = 0, found = 0)
-        var scannedCount = 0
         try {
-            val items = scanner.scan(folders, respectNomedia) { progress ->
-                scannedCount = progress.scanned
+            val scanResult = scanner.scan(folders, respectNomedia) { progress ->
                 withContext(Dispatchers.Main) {
                     scanProgress = progress
                 }
             }
+            val items = scanResult.items
             mediaItems = items.shuffled()
+            scanSummary = scanResult.summary
             withContext(Dispatchers.IO) {
-                saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount)
+                saveCachedMediaScan(prefs, folders, respectNomedia, items, scanResult.summary.scanned)
             }
             mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
             currentIndex = 0
@@ -346,6 +349,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             onStartFavorites = { startFavoriteBrowsing() },
             isScanning = isScanning,
             scanProgress = scanProgress,
+            scanSummary = scanSummary,
             mediaCount = mediaItems.size,
             favoriteCount = favoriteUris.size,
             hasScanned = hasScanned,
@@ -463,6 +467,25 @@ private fun clearCachedMediaScan(prefs: SharedPreferences) {
 private fun calculateMediaCacheSizeBytes(prefs: SharedPreferences): Long {
     return (prefs.getString(PREF_MEDIA_CACHE_ITEMS, null)?.length ?: 0).toLong() +
         (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null)?.length ?: 0).toLong()
+}
+
+private fun CachedMediaScan.toScanSummary(folders: List<String>): MediaScanner.ScanSummary {
+    val countsByFolder = items.groupingBy { it.folderUri.toString() }.eachCount()
+    return MediaScanner.ScanSummary(
+        scanned = scanned,
+        found = items.size,
+        skippedNomedia = 0,
+        failedDirectories = emptyList(),
+        elapsedMs = 0,
+        folders = folders.map { folderUri ->
+            MediaScanner.FolderScanStats(
+                folderUri = folderUri,
+                folderName = Uri.parse(folderUri).lastPathSegment ?: folderUri,
+                scanned = 0,
+                found = countsByFolder[folderUri] ?: 0
+            )
+        }
+    )
 }
 
 private fun mediaCacheFoldersKey(folders: List<String>): String {
