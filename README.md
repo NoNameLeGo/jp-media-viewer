@@ -29,8 +29,8 @@
 - [ ] **图片缩放和平移**：支持双指缩放、拖动查看大图细节。
 - [ ] **收藏管理增强**：支持批量取消收藏、只显示失效收藏、按文件夹筛选收藏。
 - [ ] **当前文件操作**：支持分享、复制路径、用其他应用打开、在文件管理器中定位。
-- [ ] **扫描统计详情**：显示每个文件夹扫描到的图片数、视频数、跳过数量和耗时。
-- [ ] **缓存管理**：提供清理缓存、查看缓存状态、自动检测缓存过期等功能。
+- [x] **扫描统计详情**：显示每个文件夹扫描到的媒体数、检查文件数、跳过 `.nomedia` 目录数、失败目录和耗时。
+- [x] **缓存管理**：提供清理缓存、查看缓存状态、清除收藏等功能。
 - [ ] **多文件夹分组浏览**：按添加的文件夹分组浏览，或只浏览某一个文件夹。
 - [ ] **视频播放控制**：提供播放 / 暂停、静音、进度条、循环开关等控制。
 - [ ] **正式发布签名**：使用正式 keystore 构建 release APK，替代当前 debug 签名测试包。
@@ -83,7 +83,7 @@ cd android
 .\gradlew.bat assembleDebug
 ```
 
-Debug：`android/app/build/outputs/apk/debug/jp-media-viewer-beta0.1.2-debug.apk`；Release：`android/app/build/outputs/apk/release/jp-media-viewer-beta0.1.2-release.apk`
+Debug：`android/app/build/outputs/apk/debug/jp-media-viewer-beta0.1.3-debug.apk`；Release：`android/app/build/outputs/apk/release/jp-media-viewer-beta0.1.3-release.apk`
 
 ## 技术栈
 

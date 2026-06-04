@@ -38,6 +38,7 @@ fun FolderPickerScreen(
     onStartFavorites: () -> Unit,
     isScanning: Boolean,
     scanProgress: MediaScanner.ScanProgress?,
+    scanSummary: MediaScanner.ScanSummary?,
     mediaCount: Int,
     favoriteCount: Int,
     hasScanned: Boolean,
@@ -98,6 +99,7 @@ fun FolderPickerScreen(
             ScanStatus(
                 isScanning = isScanning,
                 scanProgress = scanProgress,
+                scanSummary = scanSummary,
                 mediaCount = mediaCount,
                 hasScanned = hasScanned,
                 hasFolders = folders.isNotEmpty()
@@ -318,6 +320,7 @@ private fun formatCacheSize(bytes: Long): String {
 private fun ScanStatus(
     isScanning: Boolean,
     scanProgress: MediaScanner.ScanProgress?,
+    scanSummary: MediaScanner.ScanSummary?,
     mediaCount: Int,
     hasScanned: Boolean,
     hasFolders: Boolean
@@ -329,37 +332,90 @@ private fun ScanStatus(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (isScanning) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                Spacer(Modifier.width(12.dp))
-            }
-
-            val text = when {
-                isScanning -> {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(12.dp))
                     val scanned = scanProgress?.scanned ?: 0
                     val found = scanProgress?.found ?: mediaCount
-                    "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体"
+                    Text(
+                        text = "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                hasScanned && mediaCount > 0 -> {
-                    val scanned = scanProgress?.scanned ?: 0
-                    "扫描完成：已检查 ${scanned} 个文件，找到 ${mediaCount} 个媒体，可以直接开始浏览"
+                val skipped = scanProgress?.skippedNomedia ?: 0
+                val failed = scanProgress?.failedDirectories ?: 0
+                if (skipped > 0 || failed > 0) {
+                    Text(
+                        text = "已跳过 .nomedia 目录 ${skipped} 个，失败目录 ${failed} 个",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                hasScanned -> {
-                    val scanned = scanProgress?.scanned ?: 0
-                    "扫描完成：已检查 ${scanned} 个文件，找到 0 个媒体\n可能原因：.nomedia 过滤、目录无媒体、文件夹授权失效"
-                }
-                else -> "添加文件夹后会自动扫描"
+                return@Column
             }
 
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (hasScanned && scanSummary != null) {
+                Text(
+                    text = "扫描完成：已检查 ${scanSummary.scanned} 个文件，找到 ${scanSummary.found} 个媒体，用时 ${formatElapsed(scanSummary.elapsedMs)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "跳过 .nomedia 目录 ${scanSummary.skippedNomedia} 个，失败目录 ${scanSummary.failedDirectories.size} 个",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                scanSummary.folders.forEach { folder ->
+                    Text(
+                        text = "${folder.folderName}：找到 ${folder.found} 个媒体，检查 ${folder.scanned} 个文件",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (scanSummary.failedDirectories.isNotEmpty()) {
+                    Text(
+                        text = "失败目录：${scanSummary.failedDirectories.joinToString("、")}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            } else if (hasScanned) {
+                val scanned = scanProgress?.scanned ?: 0
+                val message = if (mediaCount > 0) {
+                    "扫描完成：已检查 ${scanned} 个文件，找到 ${mediaCount} 个媒体，可以直接开始浏览"
+                } else {
+                    "扫描完成：已检查 ${scanned} 个文件，找到 0 个媒体\n可能原因：.nomedia 过滤、目录无媒体、文件夹授权失效"
+                }
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Text(
+                    text = "添加文件夹后会自动扫描",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
+    }
+}
+
+private fun formatElapsed(elapsedMs: Long): String {
+    return if (elapsedMs < 1000) {
+        "${elapsedMs} ms"
+    } else {
+        "%.1f 秒".format(elapsedMs / 1000.0)
     }
 }
