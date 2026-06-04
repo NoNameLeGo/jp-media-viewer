@@ -84,6 +84,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var currentIndex by remember { mutableStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
     var scanMessage by remember { mutableStateOf<String?>(null) }
+    var mediaLoadError by remember { mutableStateOf(false) }
     var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
     var hasScanned by remember { mutableStateOf(false) }
     var rescanRequest by remember { mutableStateOf(0) }
@@ -282,7 +283,10 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 isViewing = false
                 isFavoriteBrowsing = false
             },
-            onSettings = { showSettings = !showSettings }
+            onSettings = { showSettings = !showSettings },
+            onMediaLoadError = {
+                mediaLoadError = true
+            }
         )
 
         if (showSettings) {
@@ -323,6 +327,29 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaCount = mediaItems.size,
             favoriteCount = favoriteUris.size,
             hasScanned = hasScanned
+        )
+    }
+
+    if (mediaLoadError) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { mediaLoadError = false },
+            title = { androidx.compose.material3.Text("媒体读取失败") },
+            text = { androidx.compose.material3.Text("文件可能已删除、移动或授权已失效。请重新扫描刷新媒体列表。") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    mediaLoadError = false
+                    isViewing = false
+                    isFavoriteBrowsing = false
+                    rescanMedia()
+                }) {
+                    androidx.compose.material3.Text("重新扫描")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { mediaLoadError = false }) {
+                    androidx.compose.material3.Text("稍后处理")
+                }
+            }
         )
     }
 

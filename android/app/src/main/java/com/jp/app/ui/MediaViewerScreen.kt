@@ -51,7 +51,8 @@ fun MediaViewerScreen(
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     onBack: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onMediaLoadError: () -> Unit
 ) {
     if (mediaItems.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
@@ -101,7 +102,8 @@ fun MediaViewerScreen(
                 MediaSurface(
                     item = mediaItems[previewIndex],
                     modifier = Modifier.fillMaxSize(),
-                    playVideo = false
+                    playVideo = false,
+                    onLoadError = {}
                 )
             }
         }
@@ -116,7 +118,8 @@ fun MediaViewerScreen(
             MediaSurface(
                 item = item,
                 modifier = Modifier.fillMaxSize(),
-                playVideo = true
+                playVideo = true,
+                onLoadError = onMediaLoadError
             )
         }
 
@@ -272,6 +275,8 @@ fun MediaViewerScreen(
                 }
             )
         }
+
+
     }
 }
 
@@ -279,12 +284,13 @@ fun MediaViewerScreen(
 private fun MediaSurface(
     item: MediaItem,
     modifier: Modifier = Modifier,
-    playVideo: Boolean
+    playVideo: Boolean,
+    onLoadError: () -> Unit
 ) {
     val context = LocalContext.current
 
     if (item.isVideo && playVideo) {
-        VideoPlayer(uri = item.uri, modifier = modifier)
+        VideoPlayer(uri = item.uri, modifier = modifier, onLoadError = onLoadError)
     } else {
         AsyncImage(
             model = ImageRequest.Builder(context)
@@ -292,7 +298,8 @@ private fun MediaSurface(
                 .build(),
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = modifier
+            modifier = modifier,
+            onError = { onLoadError() }
         )
     }
 }
@@ -316,8 +323,9 @@ private fun formatFileSize(bytes: Long): String {
 }
 
 @Composable
-fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier) {
+fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier, onLoadError: () -> Unit) {
     val context = LocalContext.current
+    val currentOnLoadError by rememberUpdatedState(onLoadError)
     val player = remember(uri) {
         ExoPlayer.Builder(context).build().apply {
             setMediaItem(ExoMediaItem.fromUri(uri))
@@ -328,7 +336,16 @@ fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier) {
     }
 
     DisposableEffect(player) {
-        onDispose { player.release() }
+        val listener = object : Player.Listener {
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                currentOnLoadError()
+            }
+        }
+        player.addListener(listener)
+        onDispose {
+            player.removeListener(listener)
+            player.release()
+        }
     }
 
     AndroidView(
