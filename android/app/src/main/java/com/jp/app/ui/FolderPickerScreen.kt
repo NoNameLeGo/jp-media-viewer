@@ -45,6 +45,7 @@ fun FolderPickerScreen(
     val context = LocalContext.current
     var showAbout by remember { mutableStateOf(false) }
     var openLinkError by remember { mutableStateOf<String?>(null) }
+    var folderPickError by remember { mutableStateOf<String?>(null) }
     val folderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
@@ -52,11 +53,15 @@ fun FolderPickerScreen(
         val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
             Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
             Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-        runCatching {
+        val granted = runCatching {
             context.contentResolver.takePersistableUriPermission(uri, flags)
-        }
-        if (uri.toString() !in folders) {
-            onFoldersChanged(folders + uri.toString())
+        }.isSuccess
+        if (granted) {
+            if (uri.toString() !in folders) {
+                onFoldersChanged(folders + uri.toString())
+            }
+        } else {
+            folderPickError = "无法获取文件夹授权，请重新选择目录。"
         }
     }
 
@@ -158,6 +163,19 @@ fun FolderPickerScreen(
             text = { Text(openLinkError ?: "") },
             confirmButton = {
                 TextButton(onClick = { openLinkError = null }) {
+                    Text("知道了")
+                }
+            }
+        )
+    }
+
+    if (folderPickError != null) {
+        AlertDialog(
+            onDismissRequest = { folderPickError = null },
+            title = { Text("授权失败") },
+            text = { Text(folderPickError ?: "") },
+            confirmButton = {
+                TextButton(onClick = { folderPickError = null }) {
                     Text("知道了")
                 }
             }
