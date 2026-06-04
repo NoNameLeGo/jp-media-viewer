@@ -80,6 +80,7 @@ fun MediaViewerScreen(
     var showControls by remember { mutableStateOf(true) }
     var showDetails by remember { mutableStateOf(false) }
     var isSwipeAnimating by remember { mutableStateOf(false) }
+    val currentOnToggleFavorite by rememberUpdatedState(onToggleFavorite)
     var imageScale by remember(item.uri) { mutableStateOf(1f) }
     var imageOffset by remember(item.uri) { mutableStateOf(Offset.Zero) }
     val isImageZoomed = item.isImage && imageScale > 1.01f
@@ -164,7 +165,7 @@ fun MediaViewerScreen(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { showControls = !showControls },
-                        onDoubleTap = { onToggleFavorite() },
+                        onDoubleTap = { currentOnToggleFavorite() },
                         onLongPress = { showDetails = true }
                     )
                 }
