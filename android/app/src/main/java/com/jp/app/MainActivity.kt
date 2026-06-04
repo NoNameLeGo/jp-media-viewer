@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -272,6 +273,13 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         mediaItems.filter { it.uri.toString() in favoriteUris }
     } else {
         mediaItems
+    }
+
+    BackHandler(enabled = isViewing) {
+        isViewing = false
+        isFavoriteBrowsing = false
+        showSettings = false
+        mediaLoadError = false
     }
 
     if (isViewing && visibleItems.isNotEmpty()) {
