@@ -8,7 +8,7 @@
 
 2. 调整备份策略
 
-   `AndroidManifest.xml` 当前允许备份应用数据。文件夹授权 URI、收藏 URI 和媒体缓存恢复到新设备后可能失效，也会把本地媒体路径类信息纳入备份范围。建议关闭备份，或添加 `dataExtractionRules` 排除相关 `SharedPreferences`。
+   `AndroidManifest.xml` 已关闭应用备份，避免文件夹授权 URI、收藏 URI 和媒体缓存恢复到新设备后失效，也避免将本地媒体路径类信息纳入备份范围。
 
 3. 精简 SAF 场景下的媒体读取权限
 

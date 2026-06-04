@@ -135,7 +135,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             return@LaunchedEffect
         }
 
-        val cachedScan = loadCachedMediaScan(prefs, folders, respectNomedia)
+        val cachedScan = withContext(Dispatchers.IO) {
+            loadCachedMediaScan(prefs, folders, respectNomedia)
+        }
         if (cachedScan != null) {
             mediaItems = cachedScan.items.shuffled()
             currentIndex = 0

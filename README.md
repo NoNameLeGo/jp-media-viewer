@@ -83,8 +83,6 @@ cd android
 .\gradlew.bat assembleDebug
 ```
 
-APK 输出路径：
-
 `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## 技术栈

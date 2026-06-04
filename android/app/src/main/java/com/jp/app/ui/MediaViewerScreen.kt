@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -158,11 +157,7 @@ fun MediaViewerScreen(
                                                 animationSpec = tween(200, easing = FastOutLinearInEasing)
                                             )
                                             onNext()
-                                            contentOffsetY.snapTo(screenHeightPx * 0.25f)
-                                            contentOffsetY.animateTo(
-                                                targetValue = 0f,
-                                                animationSpec = tween(180, easing = FastOutSlowInEasing)
-                                            )
+                                            contentOffsetY.snapTo(0f)
                                             isSwipeAnimating = false
                                         }
                                         totalDy > 60f -> {
@@ -172,11 +167,7 @@ fun MediaViewerScreen(
                                                 animationSpec = tween(200, easing = FastOutLinearInEasing)
                                             )
                                             onPrevious()
-                                            contentOffsetY.snapTo(-screenHeightPx * 0.25f)
-                                            contentOffsetY.animateTo(
-                                                targetValue = 0f,
-                                                animationSpec = tween(180, easing = FastOutSlowInEasing)
-                                            )
+                                            contentOffsetY.snapTo(0f)
                                             isSwipeAnimating = false
                                         }
                                         else -> {
@@ -298,7 +289,6 @@ private fun MediaSurface(
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(item.uri)
-                .crossfade(true)
                 .build(),
             contentDescription = null,
             contentScale = ContentScale.Fit,

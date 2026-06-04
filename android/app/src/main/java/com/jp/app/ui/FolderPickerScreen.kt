@@ -5,8 +5,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -46,117 +44,48 @@ fun FolderPickerScreen(
 ) {
     val context = LocalContext.current
     var showAbout by remember { mutableStateOf(false) }
-
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
+    val folderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
-        if (uri != null) {
-            val flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+        if (uri == null) return@rememberLauncherForActivityResult
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+            Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+        runCatching {
             context.contentResolver.takePersistableUriPermission(uri, flags)
-            if (uri.toString() !in folders) {
-                onFoldersChanged(folders + uri.toString())
-            }
+        }
+        if (uri.toString() !in folders) {
+            onFoldersChanged(folders + uri.toString())
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("随机浏览") },
+                title = { Text("JP Media Viewer") },
                 actions = {
                     IconButton(onClick = { showAbout = true }) {
-                        Icon(Icons.Default.Info, contentDescription = "关于")
+                        Icon(Icons.Default.Info, contentDescription = null)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                }
             )
         }
     ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("选择文件夹", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (folders.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("请添加一个或多个文件夹", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(folders, key = { it }) { uriString ->
-                        val displayName = try {
-                            Uri.parse(uriString).lastPathSegment ?: uriString
-                        } catch (_: Exception) {
-                            uriString
-                        }
-                        ListItem(
-                            leadingContent = {
-                                Icon(Icons.Default.Folder, null)
-                            },
-                            headlineContent = {
-                                Text(displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            },
-                            supportingContent = {
-                                Text(uriString, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.bodySmall)
-                            },
-                            trailingContent = {
-                                IconButton(onClick = {
-                                    try {
-                                        context.contentResolver.releasePersistableUriPermission(
-                                            Uri.parse(uriString),
-                                            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                        )
-                                    } catch (_: SecurityException) {
-                                        // Permission may already be gone if Android revoked it.
-                                    }
-                                    onFoldersChanged(folders - uriString)
-                                }) {
-                                    Icon(Icons.Default.Delete, "移除")
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                onClick = { folderPickerLauncher.launch(null) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Add, null)
-                Spacer(Modifier.width(8.dp))
+            Button(onClick = { folderPicker.launch(null) }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text("添加文件夹")
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("遵守 .nomedia 文件", modifier = Modifier.weight(1f))
-                Switch(
-                    checked = respectNomedia,
-                    onCheckedChange = onRespectNomediaChanged
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
+            Text("已添加 ${folders.size} 个文件夹")
             ScanStatus(
                 isScanning = isScanning,
                 scanProgress = scanProgress,
@@ -164,35 +93,37 @@ fun FolderPickerScreen(
                 hasScanned = hasScanned,
                 hasFolders = folders.isNotEmpty()
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                onClick = onRescan,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                enabled = folders.isNotEmpty() && !isScanning
-            ) {
-                Text("重新扫描")
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = onStartBrowsing, enabled = !isScanning && mediaCount > 0) {
+                    Text("开始浏览")
+                }
+                OutlinedButton(onClick = onStartFavorites, enabled = !isScanning) {
+                    Text("查看收藏 ($favoriteCount)")
+                }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = onStartBrowsing,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                enabled = folders.isNotEmpty() && !isScanning && mediaCount > 0
-            ) {
-                Text("开始浏览")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("遵守 .nomedia", modifier = Modifier.weight(1f))
+                Switch(checked = respectNomedia, onCheckedChange = onRespectNomediaChanged)
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = onStartFavorites,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                enabled = !isScanning
-            ) {
-                Text("查看收藏（$favoriteCount）")
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onRescan, enabled = folders.isNotEmpty() && !isScanning) {
+                    Text("重新扫描")
+                }
+            }
+            if (folders.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    folders.forEach { folder ->
+                        ListItem(
+                            headlineContent = { Text(folder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            leadingContent = { Icon(Icons.Default.Folder, contentDescription = null) },
+                            trailingContent = {
+                                IconButton(onClick = { onFoldersChanged(folders - folder) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = null)
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -201,10 +132,14 @@ fun FolderPickerScreen(
         AboutDialog(
             onDismiss = { showAbout = false },
             onOpenProject = {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PROJECT_URL)))
+                runCatching {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PROJECT_URL)))
+                }
             },
             onOpenIssues = {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ISSUES_URL)))
+                runCatching {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ISSUES_URL)))
+                }
             }
         )
     }
