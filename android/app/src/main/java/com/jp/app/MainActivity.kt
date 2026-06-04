@@ -17,6 +17,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.documentfile.provider.DocumentFile
 import com.jp.app.data.MediaItem
 import com.jp.app.data.MediaScanner
 import com.jp.app.ui.FolderPickerScreen
@@ -77,20 +78,24 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var isScanning by remember { mutableStateOf(false) }
     var isViewing by remember { mutableStateOf(false) }
     var isFavoriteBrowsing by remember { mutableStateOf(false) }
-    val initialCache = remember { loadCachedMediaScan(prefs, folders, respectNomedia) }
-    var mediaItems by remember { mutableStateOf(initialCache?.items?.shuffled() ?: emptyList()) }
+    val initialCache = remember { mutableStateOf<CachedMediaScan?>(null) }
+    var initialCacheLoaded by remember { mutableStateOf(false) }
+    var mediaItems by remember { mutableStateOf(emptyList<MediaItem>()) }
     var currentIndex by remember { mutableStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
     var scanMessage by remember { mutableStateOf<String?>(null) }
-    var scanProgress by remember {
-        mutableStateOf(
-            initialCache?.let { MediaScanner.ScanProgress(scanned = it.scanned, found = it.items.size) }
-        )
-    }
-    var hasScanned by remember { mutableStateOf(initialCache != null) }
+    var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
+    var hasScanned by remember { mutableStateOf(false) }
     var rescanRequest by remember { mutableStateOf(0) }
     var favoriteUris by remember {
         mutableStateOf(prefs.getStringSet("favorite_uris", emptySet())?.toSet() ?: emptySet())
+    }
+
+    LaunchedEffect(folders, respectNomedia) {
+        initialCache.value = withContext(Dispatchers.IO) {
+            loadCachedMediaScan(prefs, folders, respectNomedia)
+        }
+        initialCacheLoaded = true
     }
 
     fun saveFolders(newFolders: List<String>) {
@@ -122,7 +127,8 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         return newFavorites
     }
 
-    LaunchedEffect(folders, respectNomedia, rescanRequest) {
+    LaunchedEffect(initialCacheLoaded, folders, respectNomedia, rescanRequest) {
+        if (!initialCacheLoaded) return@LaunchedEffect
         if (folders.isEmpty()) {
             mediaItems = emptyList()
             currentIndex = 0
@@ -135,20 +141,30 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             return@LaunchedEffect
         }
 
-        val cachedScan = withContext(Dispatchers.IO) {
-            loadCachedMediaScan(prefs, folders, respectNomedia)
-        }
+        val cachedScan = initialCache.value
         if (cachedScan != null) {
-            mediaItems = cachedScan.items.shuffled()
-            currentIndex = 0
-            hasScanned = true
-            isScanning = false
-            scanProgress = MediaScanner.ScanProgress(
-                scanned = cachedScan.scanned,
-                found = cachedScan.items.size
-            )
-            scanMessage = null
-            return@LaunchedEffect
+            val accessibleItems = withContext(Dispatchers.IO) {
+                cachedScan.items.filter { item ->
+                    runCatching {
+                        DocumentFile.fromSingleUri(context, item.uri)?.exists() == true
+                    }.getOrDefault(false)
+                }
+            }
+            if (accessibleItems.size == cachedScan.items.size) {
+                mediaItems = accessibleItems.shuffled()
+                currentIndex = 0
+                hasScanned = true
+                isScanning = false
+                scanProgress = MediaScanner.ScanProgress(
+                    scanned = cachedScan.scanned,
+                    found = accessibleItems.size
+                )
+                scanMessage = null
+                return@LaunchedEffect
+            }
+
+            initialCache.value = null
+            clearCachedMediaScan(prefs)
         }
 
         isScanning = true
@@ -163,7 +179,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 }
             }
             mediaItems = items.shuffled()
-            saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount)
+            withContext(Dispatchers.IO) {
+                saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount)
+            }
             currentIndex = 0
             hasScanned = true
             if (isFavoriteBrowsing && mediaItems.none { it.uri.toString() in favoriteUris }) {

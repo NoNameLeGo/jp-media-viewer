@@ -44,6 +44,7 @@ fun FolderPickerScreen(
 ) {
     val context = LocalContext.current
     var showAbout by remember { mutableStateOf(false) }
+    var openLinkError by remember { mutableStateOf<String?>(null) }
     val folderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
@@ -132,13 +133,32 @@ fun FolderPickerScreen(
         AboutDialog(
             onDismiss = { showAbout = false },
             onOpenProject = {
+                openLinkError = null
                 runCatching {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PROJECT_URL)))
+                }.onFailure {
+                    openLinkError = "无法打开项目地址，请检查是否有可用浏览器。"
                 }
             },
             onOpenIssues = {
+                openLinkError = null
                 runCatching {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ISSUES_URL)))
+                }.onFailure {
+                    openLinkError = "无法打开问题反馈，请检查是否有可用浏览器。"
+                }
+            }
+        )
+    }
+
+    if (openLinkError != null) {
+        AlertDialog(
+            onDismissRequest = { openLinkError = null },
+            title = { Text("打开失败") },
+            text = { Text(openLinkError ?: "") },
+            confirmButton = {
+                TextButton(onClick = { openLinkError = null }) {
+                    Text("知道了")
                 }
             }
         )
