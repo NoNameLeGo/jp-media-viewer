@@ -1,10 +1,9 @@
-APK 自动构建版本 beta0.0.8。此版本开始改为稳定 release 签名，后续同签名版本可直接覆盖安装。
+APK 自动构建版本 beta0.0.9。此版本修复文件夹授权失败问题，并继续使用稳定 release 签名。
 
 ### 变更内容
-- 发布签名：Actions 使用 GitHub Secrets 还原 release keystore 并构建签名 release APK
-- 覆盖安装：从 beta0.0.8 开始，后续 release 签名版本可直接覆盖安装
-- 输出命名：Release 附件改为 `jp-media-viewer-beta0.0.8-release.apk`
-- 版本元数据：应用版本更新为 beta0.0.8
+- 文件夹授权：持久化 SAF 授权时只请求读取权限，避免将未授予的写入权限传入导致授权失败
+- 版本元数据：应用版本更新为 beta0.0.9
+- 覆盖安装：延续 beta0.0.8 引入的稳定 release 签名，后续 release 签名版本可直接覆盖安装
 
 ### 注意
-- 之前的 debug 签名版本无法被 release 签名 APK 直接覆盖；需要先卸载旧版再安装 beta0.0.8。
+- 如果设备上安装的是 beta0.0.7 或更早 debug 签名版本，仍需先卸载旧版再安装 release 签名 APK。
