@@ -70,17 +70,6 @@ jobs:
         with:
           name: Release ${{ github.ref_name }}
           tag_name: ${{ github.ref }}
-          body: |-
-            APK 自动构建版本：${{ github.ref_name }}。此版本为 debug 签名，可直接安装用于测试。
-
-            ### 变更内容
-            - 启动体验：扫描结果会在本机缓存，同一组文件夹下次打开可直接浏览
-            - 扫描控制：首页新增“重新扫描”按钮，文件变化后可手动刷新媒体列表
-            - 关于界面：新增版本号、构建类型、开发者、许可证、隐私说明和第三方组件信息
-            - 问题反馈：关于界面可直接打开 GitHub Issues 页面
-            - 文档同步：README 补充媒体缓存、重新扫描、关于界面和反馈入口说明
-            - 规划存档：新增 feature.md 记录后续修复项和功能建议
-            - 构建修复：启用 BuildConfig 生成，确保关于界面可读取版本号
-            - 版本元数据：应用版本更新为 beta0.0.6，延续 debug 签名测试包发布
+          body_path: .github/release-notes.md
           files: android/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: false
