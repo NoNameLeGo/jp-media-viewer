@@ -84,7 +84,7 @@ class MediaScanner(private val context: Context) {
 
             val folderStats = FolderAccumulator(
                 folderUri = uriString,
-                folderName = rootDoc.name ?: treeUri.lastPathSegment ?: uriString
+                folderName = rootDoc.safeName() ?: treeUri.lastPathSegment ?: uriString
             )
             folders.add(folderStats)
 
@@ -149,19 +149,19 @@ class MediaScanner(private val context: Context) {
         folderStats: FolderAccumulator,
         onProgress: suspend (Int, Int) -> Unit
     ): ScanState {
-        if (respectNomedia && dir.findFile(".nomedia") != null) {
+        if (respectNomedia && runCatching { dir.findFile(".nomedia") != null }.getOrDefault(false)) {
             return ScanState(scanned = scanned, skippedNomedia = skippedNomedia + 1)
         }
 
         val files = runCatching { dir.listFiles() }.getOrElse {
-            failedDirectories.add(dir.name ?: dir.uri.toString())
+            failedDirectories.add(dir.safeName() ?: dir.uri.toString())
             return ScanState(scanned = scanned, skippedNomedia = skippedNomedia)
         }
 
         var scannedCount = scanned
         var skippedCount = skippedNomedia
         for (file in files) {
-            if (file.isDirectory) {
+            if (file.safeIsDirectory()) {
                 val state = scanDirectory(
                     dir = file,
                     rootUri = rootUri,
@@ -175,20 +175,21 @@ class MediaScanner(private val context: Context) {
                 )
                 scannedCount = state.scanned
                 skippedCount = state.skippedNomedia
-            } else if (file.isFile) {
+            } else if (file.safeIsFile()) {
                 scannedCount++
                 folderStats.scanned++
-                val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
+                val fileName = file.safeName()
+                val mime = file.safeType()?.takeIf { it.isNotBlank() } ?: inferMimeType(fileName)
                 if (isSupportedMedia(mime)) {
                     folderStats.found++
                     results.add(
                         MediaItem(
                             uri = file.uri,
-                            name = file.name ?: "unknown",
+                            name = fileName ?: "unknown",
                             mimeType = mime,
-                            size = file.length(),
+                            size = file.safeLength(),
                             folderUri = rootUri,
-                            modifiedAt = file.lastModified()
+                            modifiedAt = file.safeLastModified()
                         )
                     )
                 }
@@ -198,6 +199,30 @@ class MediaScanner(private val context: Context) {
             }
         }
         return ScanState(scanned = scannedCount, skippedNomedia = skippedCount)
+    }
+
+    private fun DocumentFile.safeName(): String? {
+        return runCatching { name }.getOrNull()
+    }
+
+    private fun DocumentFile.safeType(): String? {
+        return runCatching { type }.getOrNull()
+    }
+
+    private fun DocumentFile.safeLength(): Long {
+        return runCatching { length() }.getOrDefault(0L)
+    }
+
+    private fun DocumentFile.safeLastModified(): Long {
+        return runCatching { lastModified() }.getOrDefault(0L)
+    }
+
+    private fun DocumentFile.safeIsDirectory(): Boolean {
+        return runCatching { isDirectory }.getOrDefault(false)
+    }
+
+    private fun DocumentFile.safeIsFile(): Boolean {
+        return runCatching { isFile }.getOrDefault(false)
     }
 
     private fun isSupportedMedia(mimeType: String): Boolean {
