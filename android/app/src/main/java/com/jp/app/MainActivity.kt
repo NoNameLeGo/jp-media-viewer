@@ -88,6 +88,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
     var hasScanned by remember { mutableStateOf(false) }
     var rescanRequest by remember { mutableStateOf(0) }
+    var mediaCacheSizeBytes by remember { mutableStateOf(calculateMediaCacheSizeBytes(prefs)) }
     var favoriteUris by remember {
         mutableStateOf(prefs.getStringSet("favorite_uris", emptySet())?.toSet() ?: emptySet())
     }
@@ -98,22 +99,42 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         }
         initialCacheLoaded = true
     }
-
     fun saveFolders(newFolders: List<String>) {
         clearCachedMediaScan(prefs)
+        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         folders = newFolders
         prefs.edit().putStringSet("folder_uris", newFolders.toSet()).apply()
     }
 
     fun saveNomedia(value: Boolean) {
         clearCachedMediaScan(prefs)
+        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         respectNomedia = value
         prefs.edit().putBoolean("respect_nomedia", value).apply()
     }
 
     fun rescanMedia() {
         clearCachedMediaScan(prefs)
+        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         rescanRequest++
+    }
+
+    fun clearMediaCacheOnly() {
+        clearCachedMediaScan(prefs)
+        initialCache.value = null
+        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+        scanMessage = "媒体缓存已清除。当前扫描结果仍可继续浏览，需要刷新时请重新扫描。"
+    }
+
+    fun clearFavorites() {
+        favoriteUris = emptySet()
+        prefs.edit().remove("favorite_uris").apply()
+        if (isFavoriteBrowsing) {
+            isViewing = false
+            isFavoriteBrowsing = false
+            currentIndex = 0
+        }
+        scanMessage = "收藏已清空。"
     }
 
     fun toggleFavorite(item: MediaItem): Set<String> {
@@ -183,6 +204,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             withContext(Dispatchers.IO) {
                 saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount)
             }
+            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
             currentIndex = 0
             hasScanned = true
             if (isFavoriteBrowsing && mediaItems.none { it.uri.toString() in favoriteUris }) {
@@ -326,7 +348,10 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             scanProgress = scanProgress,
             mediaCount = mediaItems.size,
             favoriteCount = favoriteUris.size,
-            hasScanned = hasScanned
+            hasScanned = hasScanned,
+            mediaCacheSizeBytes = mediaCacheSizeBytes,
+            onClearMediaCache = { clearMediaCacheOnly() },
+            onClearFavorites = { clearFavorites() }
         )
     }
 
@@ -433,6 +458,11 @@ private fun clearCachedMediaScan(prefs: SharedPreferences) {
         .remove(PREF_MEDIA_CACHE_SCANNED)
         .remove(PREF_MEDIA_CACHE_ITEMS)
         .apply()
+}
+
+private fun calculateMediaCacheSizeBytes(prefs: SharedPreferences): Long {
+    return (prefs.getString(PREF_MEDIA_CACHE_ITEMS, null)?.length ?: 0).toLong() +
+        (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null)?.length ?: 0).toLong()
 }
 
 private fun mediaCacheFoldersKey(folders: List<String>): String {
