@@ -1,9 +1,9 @@
-APK 自动构建版本 beta0.1.5-fix。此版本用于验证添加文件夹后闪退修复，并继续使用稳定 release 签名。
+APK 自动构建版本 beta0.1.5-crashfix-test。此版本用于验证覆盖升级启动闪退和添加文件夹扫描闪退修复，并继续使用稳定 release 签名。
 
 ### 修复内容
-- 扫描稳定性：为 SAF 文件元数据读取增加保护，避免部分文件/目录读取 `name`、`type`、`length`、`lastModified`、`isFile`、`isDirectory` 时抛异常导致闪退
-- 文件日期：无法读取修改时间时显示“未知”，不再中断扫描
-- 版本元数据：应用版本更新为 beta0.1.5-fix，versionCode 更新为 16
+- 扫描稳定性：将 SAF 扫描改为显式栈遍历，避免深层目录递归导致闪退
+- 元数据保护：为 `fromTreeUri`、`uri`、`name`、`type`、`length`、`lastModified`、`isFile`、`isDirectory`、`listFiles`、`.nomedia` 检查增加异常保护，单个异常文件或目录只会被跳过并计入失败目录
+- 版本元数据：应用版本更新为 beta0.1.5-crashfix-test，versionCode 更新为 17
 
 ### 版本信息
 - Release APK 继续使用稳定签名，支持从 beta0.0.8 及之后 release 签名版本覆盖安装
