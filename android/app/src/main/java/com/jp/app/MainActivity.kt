@@ -19,7 +19,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.documentfile.provider.DocumentFile
+
 import com.jp.app.data.MediaItem
 import com.jp.app.data.MediaScanner
 import com.jp.app.ui.FolderPickerScreen
@@ -173,31 +173,17 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 
         val cachedScan = initialCache.value
         if (cachedScan != null) {
-            val accessibleItems = withContext(Dispatchers.IO) {
-                cachedScan.items.filter { item ->
-                    runCatching {
-                        DocumentFile.fromSingleUri(context, item.uri)?.exists() == true
-                    }.getOrDefault(false)
-                }
-            }
-            if (accessibleItems.size == cachedScan.items.size) {
-                mediaItems = accessibleItems.shuffled()
-                currentIndex = 0
-                hasScanned = true
-                isScanning = false
-                scanProgress = MediaScanner.ScanProgress(
-                    scanned = cachedScan.scanned,
-                    found = accessibleItems.size
-                )
+            mediaItems = cachedScan.items.shuffled()
+            currentIndex = 0
+            hasScanned = true
+            isScanning = false
+            scanProgress = MediaScanner.ScanProgress(
+                scanned = cachedScan.scanned,
+                found = cachedScan.items.size
+            )
 
-                scanMessage = null
-                return@LaunchedEffect
-            }
-
-            initialCache.value = null
-            clearCachedMediaScan(prefs)
-            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
-
+            scanMessage = null
+            return@LaunchedEffect
         }
 
         isScanning = true
