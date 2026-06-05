@@ -50,6 +50,7 @@ fun FolderPickerScreen(
     var showAbout by remember { mutableStateOf(false) }
     var openLinkError by remember { mutableStateOf<String?>(null) }
     var folderPickError by remember { mutableStateOf<String?>(null) }
+    var folderDetailUri by remember { mutableStateOf<String?>(null) }
     val folderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
@@ -131,16 +132,18 @@ fun FolderPickerScreen(
             if (folders.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     folders.forEach { folder ->
+                        val folderLabel = folderDisplayName(folder)
                         ListItem(
                             headlineContent = {
                                 Text(
-                                    text = folder,
+                                    text = folderLabel,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             },
                             leadingContent = { Icon(Icons.Default.Folder, contentDescription = null) },
+                            modifier = Modifier.clickable { folderDetailUri = folder },
                             trailingContent = {
                                 IconButton(onClick = { onFoldersChanged(folders - folder) }) {
                                     Icon(Icons.Default.Delete, contentDescription = null)
@@ -198,6 +201,13 @@ fun FolderPickerScreen(
                     Text("知道了")
                 }
             }
+        )
+    }
+
+    if (folderDetailUri != null) {
+        FolderDetailDialog(
+            folderUri = folderDetailUri!!,
+            onDismiss = { folderDetailUri = null }
         )
     }
 }
@@ -262,8 +272,52 @@ private fun AboutRow(label: String, value: String) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Text(text = value, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
+}
+
+private fun folderDisplayName(folderUri: String): String {
+    return runCatching { Uri.parse(folderUri).lastPathSegment }
+        .getOrNull()
+        ?.takeIf { it.isNotBlank() }
+        ?: folderUri
+}
+
+@Composable
+private fun FolderDetailDialog(
+    folderUri: String,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+    val displayName = remember(folderUri) { folderDisplayName(folderUri) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("文件夹详情") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("显示名称：$displayName")
+                Text("完整 URI：$folderUri")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(folderUri))
+                Toast.makeText(context, "已复制完整 URI", Toast.LENGTH_SHORT).show()
+            }) {
+                Text("复制 URI")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
 }
 
 @Composable
