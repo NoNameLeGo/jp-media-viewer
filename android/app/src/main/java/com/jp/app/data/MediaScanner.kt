@@ -13,130 +13,33 @@ class MediaScanner(private val context: Context) {
         const val PROGRESS_UPDATE_INTERVAL = 20
     }
 
-    data class FolderScanStats(
-        val folderUri: String,
-        val folderName: String,
-        val scanned: Int,
-        val found: Int
-    )
-
-    data class ScanSummary(
-        val scanned: Int,
-        val found: Int,
-        val skippedNomedia: Int,
-        val failedDirectories: List<String>,
-        val elapsedMs: Long,
-        val folders: List<FolderScanStats>
-    )
-
-    data class ScanResult(
-        val items: List<MediaItem>,
-        val summary: ScanSummary
-    )
-
     data class ScanProgress(
         val scanned: Int,
         val found: Int,
         val totalFiles: Int? = null,
-        val currentFile: String = "",
-        val skippedNomedia: Int = 0,
-        val failedDirectories: Int = 0
-    )
-
-    private data class FolderAccumulator(
-        val folderUri: String,
-        val folderName: String,
-        var scanned: Int = 0,
-        var found: Int = 0
+        val currentFile: String = ""
     )
 
     suspend fun scan(
         folderUris: List<String>,
         respectNomedia: Boolean,
         onProgress: suspend (ScanProgress) -> Unit = {}
-    ): ScanResult = withContext(Dispatchers.IO) {
-        val startedAt = System.currentTimeMillis()
+    ): List<MediaItem> = withContext(Dispatchers.IO) {
         val results = mutableListOf<MediaItem>()
-        val folders = mutableListOf<FolderAccumulator>()
-        val failedDirectories = mutableListOf<String>()
         var scanned = 0
-        var skippedNomedia = 0
-
-        suspend fun publishProgress() {
-            onProgress(
-                ScanProgress(
-                    scanned = scanned,
-                    found = results.size,
-                    skippedNomedia = skippedNomedia,
-                    failedDirectories = failedDirectories.size
-                )
-            )
-        }
 
         for (uriString in folderUris) {
             val treeUri = Uri.parse(uriString)
-            val rootDoc = DocumentFile.fromTreeUri(context, treeUri)
-            if (rootDoc == null) {
-                failedDirectories.add(uriString)
-                publishProgress()
-                continue
+            val rootDoc = DocumentFile.fromTreeUri(context, treeUri) ?: continue
+            scanned = scanDirectory(rootDoc, treeUri, respectNomedia, results, scanned) { count ->
+                scanned = count
+                onProgress(ScanProgress(scanned = scanned, found = results.size, currentFile = ""))
             }
-
-            val folderStats = FolderAccumulator(
-                folderUri = uriString,
-                folderName = rootDoc.safeName() ?: treeUri.lastPathSegment ?: uriString
-            )
-            folders.add(folderStats)
-
-            val scanState = scanDirectory(
-                dir = rootDoc,
-                rootUri = treeUri,
-                respectNomedia = respectNomedia,
-                results = results,
-                scanned = scanned,
-                skippedNomedia = skippedNomedia,
-                failedDirectories = failedDirectories,
-                folderStats = folderStats,
-                onProgress = { count, skipped ->
-                    scanned = count
-                    skippedNomedia = skipped
-                    publishProgress()
-                }
-            )
-            scanned = scanState.scanned
-            skippedNomedia = scanState.skippedNomedia
         }
 
-        val summary = ScanSummary(
-            scanned = scanned,
-            found = results.size,
-            skippedNomedia = skippedNomedia,
-            failedDirectories = failedDirectories.toList(),
-            elapsedMs = (System.currentTimeMillis() - startedAt).coerceAtLeast(0),
-            folders = folders.map { folder ->
-                FolderScanStats(
-                    folderUri = folder.folderUri,
-                    folderName = folder.folderName,
-                    scanned = folder.scanned,
-                    found = folder.found
-                )
-            }
-        )
-        onProgress(
-            ScanProgress(
-                scanned = summary.scanned,
-                found = summary.found,
-                skippedNomedia = summary.skippedNomedia,
-                failedDirectories = summary.failedDirectories.size
-            )
-        )
-        ScanResult(items = results.toList(), summary = summary)
+        onProgress(ScanProgress(scanned = scanned, found = results.size))
+        results.toList()
     }
-
-    private data class ScanState(
-        val scanned: Int,
-        val skippedNomedia: Int
-    )
 
     private suspend fun scanDirectory(
         dir: DocumentFile,
@@ -144,85 +47,36 @@ class MediaScanner(private val context: Context) {
         respectNomedia: Boolean,
         results: MutableList<MediaItem>,
         scanned: Int,
-        skippedNomedia: Int,
-        failedDirectories: MutableList<String>,
-        folderStats: FolderAccumulator,
-        onProgress: suspend (Int, Int) -> Unit
-    ): ScanState {
-        if (respectNomedia && runCatching { dir.findFile(".nomedia") != null }.getOrDefault(false)) {
-            return ScanState(scanned = scanned, skippedNomedia = skippedNomedia + 1)
-        }
+        onProgress: suspend (Int) -> Unit
+    ): Int {
+        if (respectNomedia && dir.findFile(".nomedia") != null) return scanned
 
-        val files = runCatching { dir.listFiles() }.getOrElse {
-            failedDirectories.add(dir.safeName() ?: dir.uri.toString())
-            return ScanState(scanned = scanned, skippedNomedia = skippedNomedia)
-        }
-
+        val files = dir.listFiles()
         var scannedCount = scanned
-        var skippedCount = skippedNomedia
         for (file in files) {
-            if (file.safeIsDirectory()) {
-                val state = scanDirectory(
-                    dir = file,
-                    rootUri = rootUri,
-                    respectNomedia = respectNomedia,
-                    results = results,
-                    scanned = scannedCount,
-                    skippedNomedia = skippedCount,
-                    failedDirectories = failedDirectories,
-                    folderStats = folderStats,
-                    onProgress = onProgress
-                )
-                scannedCount = state.scanned
-                skippedCount = state.skippedNomedia
-            } else if (file.safeIsFile()) {
+            if (file.isDirectory) {
+                scannedCount = scanDirectory(file, rootUri, respectNomedia, results, scannedCount, onProgress)
+            } else if (file.isFile) {
                 scannedCount++
-                folderStats.scanned++
-                val fileName = file.safeName()
-                val mime = file.safeType()?.takeIf { it.isNotBlank() } ?: inferMimeType(fileName)
+                val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
                 if (isSupportedMedia(mime)) {
-                    folderStats.found++
                     results.add(
                         MediaItem(
                             uri = file.uri,
-                            name = fileName ?: "unknown",
+                            name = file.name ?: "unknown",
                             mimeType = mime,
-                            size = file.safeLength(),
+                            size = file.length(),
                             folderUri = rootUri,
-                            modifiedAt = file.safeLastModified()
+                            modifiedAt = 0L
                         )
                     )
                 }
                 if (scannedCount % PROGRESS_UPDATE_INTERVAL == 0) {
-                    onProgress(scannedCount, skippedCount)
+                    onProgress(scannedCount)
                 }
             }
         }
-        return ScanState(scanned = scannedCount, skippedNomedia = skippedCount)
-    }
-
-    private fun DocumentFile.safeName(): String? {
-        return runCatching { name }.getOrNull()
-    }
-
-    private fun DocumentFile.safeType(): String? {
-        return runCatching { type }.getOrNull()
-    }
-
-    private fun DocumentFile.safeLength(): Long {
-        return runCatching { length() }.getOrDefault(0L)
-    }
-
-    private fun DocumentFile.safeLastModified(): Long {
-        return runCatching { lastModified() }.getOrDefault(0L)
-    }
-
-    private fun DocumentFile.safeIsDirectory(): Boolean {
-        return runCatching { isDirectory }.getOrDefault(false)
-    }
-
-    private fun DocumentFile.safeIsFile(): Boolean {
-        return runCatching { isFile }.getOrDefault(false)
+        return scannedCount
     }
 
     private fun isSupportedMedia(mimeType: String): Boolean {
