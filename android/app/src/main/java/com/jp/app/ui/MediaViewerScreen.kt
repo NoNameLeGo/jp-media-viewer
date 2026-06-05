@@ -43,6 +43,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import androidx.compose.ui.graphics.FilterQuality
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.jp.app.data.MediaItem
@@ -379,6 +380,7 @@ private fun MediaSurface(
                 .build(),
             contentDescription = null,
             contentScale = ContentScale.Fit,
+            filterQuality = FilterQuality.High,
             modifier = modifier,
             onError = { onLoadError() }
         )
