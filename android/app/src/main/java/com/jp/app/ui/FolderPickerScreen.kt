@@ -132,7 +132,14 @@ fun FolderPickerScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     folders.forEach { folder ->
                         ListItem(
-                            headlineContent = { Text(folder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            headlineContent = {
+                                Text(
+                                    text = folder,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            },
                             leadingContent = { Icon(Icons.Default.Folder, contentDescription = null) },
                             trailingContent = {
                                 IconButton(onClick = { onFoldersChanged(folders - folder) }) {
