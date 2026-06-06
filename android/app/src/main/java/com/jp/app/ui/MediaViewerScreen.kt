@@ -95,9 +95,9 @@ fun MediaViewerScreen(
     var settledZoomScale by remember(item.uri) { mutableStateOf(1f) }
     val isImageZoomed = item.isImage && imageScale > 1.01f
     val targetZoomScale = when {
-        imageScale >= 2.75f -> 4f
-        imageScale >= 1.75f -> 2f
-        imageScale >= 1.20f -> 1.5f
+        imageScale >= 2.40f -> 4f
+        imageScale >= 1.60f -> 2f
+        imageScale >= 1.15f -> 1.5f
         else -> 1f
     }
     val imageTargetSize = remember(item.uri, settledZoomScale, imageLoadSize) {
@@ -125,7 +125,7 @@ fun MediaViewerScreen(
             return@LaunchedEffect
         }
         val stableScale = targetZoomScale
-        kotlinx.coroutines.delay(180)
+        kotlinx.coroutines.delay(80)
         if (imageScale >= stableScale - 0.05f && imageLoadSize.width > 0 && imageLoadSize.height > 0) {
             settledZoomScale = stableScale
         }
