@@ -419,7 +419,7 @@ private fun MediaSurface(
                 .data(item.uri)
                 .apply {
                     if (loadSize != null && loadSize.width > 0 && loadSize.height > 0) {
-                        size(loadSize)
+                        size(loadSize.width, loadSize.height)
                     }
                 }
                 .memoryCachePolicy(CachePolicy.ENABLED)
