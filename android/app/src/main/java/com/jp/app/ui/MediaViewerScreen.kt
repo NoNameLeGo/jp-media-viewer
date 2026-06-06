@@ -23,28 +23,31 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem as ExoMediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import androidx.compose.ui.graphics.FilterQuality
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.jp.app.data.MediaItem
 import kotlinx.coroutines.launch
@@ -88,7 +91,25 @@ fun MediaViewerScreen(
     val currentOnToggleFavorite by rememberUpdatedState(onToggleFavorite)
     var imageScale by remember(item.uri) { mutableStateOf(1f) }
     var imageOffset by remember(item.uri) { mutableStateOf(Offset.Zero) }
+    var imageLoadSize by remember(item.uri) { mutableStateOf(IntSize.Zero) }
+    var settledZoomScale by remember(item.uri) { mutableStateOf(1f) }
     val isImageZoomed = item.isImage && imageScale > 1.01f
+    val targetZoomScale = when {
+        imageScale >= 2.75f -> 4f
+        imageScale >= 1.75f -> 2f
+        imageScale >= 1.20f -> 1.5f
+        else -> 1f
+    }
+    val imageTargetSize = remember(item.uri, settledZoomScale, imageLoadSize) {
+        if (!item.isImage || imageLoadSize.width <= 0 || imageLoadSize.height <= 0) {
+            null
+        } else {
+            IntSize(
+                width = (imageLoadSize.width * settledZoomScale).roundToInt(),
+                height = (imageLoadSize.height * settledZoomScale).roundToInt()
+            )
+        }
+    }
     val folderName = item.folderUri.lastPathSegment ?: item.folderUri.toString()
     val swipeScale = if (contentOffsetY.value < 0f) {
         (1f + contentOffsetY.value / 1000f).coerceAtLeast(0.9f)
@@ -96,6 +117,19 @@ fun MediaViewerScreen(
         (1f - contentOffsetY.value / 1200f).coerceAtLeast(0.9f)
     }
     val swipeAlpha = (1f - abs(contentOffsetY.value) / 1600f).coerceAtLeast(0.7f)
+
+    LaunchedEffect(item.uri, imageScale, imageLoadSize) {
+        if (!item.isImage || imageLoadSize.width <= 0 || imageLoadSize.height <= 0) return@LaunchedEffect
+        if (imageScale <= 1.01f) {
+            settledZoomScale = 1f
+            return@LaunchedEffect
+        }
+        val stableScale = targetZoomScale
+        kotlinx.coroutines.delay(180)
+        if (imageScale >= stableScale - 0.05f && imageLoadSize.width > 0 && imageLoadSize.height > 0) {
+            settledZoomScale = stableScale
+        }
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         val screenWidthPx = with(density) { maxWidth.toPx() }
@@ -135,7 +169,8 @@ fun MediaViewerScreen(
                     item = mediaItems[previewIndex],
                     modifier = Modifier.fillMaxSize(),
                     playVideo = false,
-                    onLoadError = {}
+                    onLoadError = {},
+                    onImageSizeChanged = {}
                 )
             }
         }
@@ -149,6 +184,7 @@ fun MediaViewerScreen(
         ) {
             MediaSurface(
                 item = item,
+                loadSize = imageTargetSize,
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
@@ -160,7 +196,8 @@ fun MediaViewerScreen(
                         }
                     },
                 playVideo = true,
-                onLoadError = onMediaLoadError
+                onLoadError = onMediaLoadError,
+                onImageSizeChanged = { imageLoadSize = it }
             )
         }
 
@@ -193,6 +230,9 @@ fun MediaViewerScreen(
                                 val newScale = (imageScale * zoomChange).coerceIn(1f, 4f)
                                 imageScale = newScale
                                 imageOffset = clampImageOffset(imageOffset + panChange, newScale)
+                                if (newScale <= 1.01f) {
+                                    settledZoomScale = 1f
+                                }
                                 event.changes.forEach { it.consume() }
                             }
                         } while (event.changes.any { it.pressed })
@@ -357,31 +397,42 @@ fun MediaViewerScreen(
                 }
             )
         }
-
-
     }
 }
 
 @Composable
 private fun MediaSurface(
     item: MediaItem,
+    loadSize: IntSize? = null,
     modifier: Modifier = Modifier,
     playVideo: Boolean,
-    onLoadError: () -> Unit
+    onLoadError: () -> Unit,
+    onImageSizeChanged: (IntSize) -> Unit = {}
 ) {
     val context = LocalContext.current
 
     if (item.isVideo && playVideo) {
         VideoPlayer(uri = item.uri, modifier = modifier, onLoadError = onLoadError)
     } else {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = ImageRequest.Builder(context)
                 .data(item.uri)
+                .apply {
+                    if (loadSize != null && loadSize.width > 0 && loadSize.height > 0) {
+                        size(loadSize)
+                    }
+                }
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .crossfade(true)
                 .build(),
+            loading = {
+                Box(modifier = modifier.background(Color.Black))
+            },
             contentDescription = null,
             contentScale = ContentScale.Fit,
             filterQuality = FilterQuality.High,
-            modifier = modifier,
+            modifier = modifier.onSizeChanged(onImageSizeChanged),
             onError = { onLoadError() }
         )
     }
@@ -413,7 +464,6 @@ private fun formatModifiedDate(modifiedAt: Long): String {
     if (modifiedAt <= 0L) return "未知"
     return detailDateFormatter.format(Instant.ofEpochMilli(modifiedAt))
 }
-
 
 @Composable
 fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier, onLoadError: () -> Unit) {
