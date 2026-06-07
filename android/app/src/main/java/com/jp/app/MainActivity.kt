@@ -197,14 +197,19 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 scannedCount = progress.scanned
                 withContext(Dispatchers.Main) {
                     scanProgress = progress
+                    if (!isViewing && progress.foundItems.isNotEmpty()) {
+                        mediaItems = progress.foundItems
+                    }
                 }
             }
-            mediaItems = items.shuffled()
+            if (!isViewing) {
+                mediaItems = items.shuffled()
+                currentIndex = 0
+            }
             withContext(Dispatchers.IO) {
                 saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount)
             }
             mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
-            currentIndex = 0
             hasScanned = true
             if (isFavoriteBrowsing && mediaItems.none { it.uri.toString() in favoriteUris }) {
                 isViewing = false
@@ -241,9 +246,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     }
 
     fun startBrowsing() {
-        if (isScanning) {
-            scanMessage = "正在扫描中，请稍等片刻。"
-        } else if (mediaItems.isEmpty()) {
+        if (mediaItems.isEmpty()) {
             scanMessage = "没有找到图片或视频。可能原因：\n1. 所选目录没有支持的媒体文件\n2. .nomedia 过滤隐藏了部分目录\n3. 文件夹授权已失效，请删除后重新添加"
         } else {
             mediaItems = reshuffleAvoidingFirst(mediaItems, mediaItems.firstOrNull()?.uri?.toString())
@@ -254,11 +257,6 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     }
 
     fun startFavoriteBrowsing() {
-        if (isScanning) {
-            scanMessage = "正在扫描中，请稍后再查看收藏。"
-            return
-        }
-
         val favoriteItems = mediaItems.filter { it.uri.toString() in favoriteUris }
         if (favoriteUris.isEmpty()) {
             scanMessage = "收藏列表为空。浏览图片或视频时双击即可收藏。"

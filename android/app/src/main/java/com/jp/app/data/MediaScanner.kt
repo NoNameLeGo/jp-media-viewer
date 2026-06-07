@@ -16,6 +16,7 @@ class MediaScanner(private val context: Context) {
     data class ScanProgress(
         val scanned: Int,
         val found: Int,
+        val foundItems: List<MediaItem> = emptyList(),
         val totalFiles: Int? = null,
         val currentFile: String = ""
     )
@@ -33,11 +34,11 @@ class MediaScanner(private val context: Context) {
             val rootDoc = DocumentFile.fromTreeUri(context, treeUri) ?: continue
             scanned = scanDirectory(rootDoc, treeUri, respectNomedia, results, scanned) { count ->
                 scanned = count
-                onProgress(ScanProgress(scanned = scanned, found = results.size, currentFile = ""))
+                onProgress(ScanProgress(scanned = scanned, found = results.size, foundItems = results.toList(), currentFile = ""))
             }
         }
 
-        onProgress(ScanProgress(scanned = scanned, found = results.size))
+        onProgress(ScanProgress(scanned = scanned, found = results.size, foundItems = results.toList()))
         results.toList()
     }
 

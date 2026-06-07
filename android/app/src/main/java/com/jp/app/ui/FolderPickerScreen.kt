@@ -108,10 +108,10 @@ fun FolderPickerScreen(
                 hasFolders = folders.isNotEmpty()
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onStartBrowsing, enabled = !isScanning && mediaCount > 0) {
+                Button(onClick = onStartBrowsing, enabled = mediaCount > 0) {
                     Text("开始浏览")
                 }
-                OutlinedButton(onClick = onStartFavorites, enabled = !isScanning) {
+                OutlinedButton(onClick = onStartFavorites, enabled = favoriteCount > 0) {
                     Text("查看收藏 ($favoriteCount)")
                 }
             }
@@ -408,7 +408,7 @@ private fun ScanStatus(
                 isScanning -> {
                     val scanned = scanProgress?.scanned ?: 0
                     val found = scanProgress?.found ?: mediaCount
-                    "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体"
+                    "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体（可先行浏览）"
                 }
                 hasScanned && mediaCount > 0 -> {
                     val scanned = scanProgress?.scanned ?: 0
