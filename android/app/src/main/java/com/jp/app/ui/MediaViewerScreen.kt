@@ -130,6 +130,9 @@ fun MediaViewerScreen(
             settledZoomScale = stableScale
         }
     }
+    LaunchedEffect(item.uri) {
+        showDetails = false
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         val screenWidthPx = with(density) { maxWidth.toPx() }
@@ -248,7 +251,6 @@ fun MediaViewerScreen(
                     detectVerticalDragGestures(
                         onDragStart = {
                             totalDy = 0f
-                            if (!isImageZoomed) showControls = false
                         },
                         onVerticalDrag = { change, dragAmount ->
                             if (!isSwipeAnimating && !isImageZoomed) {
@@ -427,7 +429,7 @@ private fun MediaSurface(
                 .crossfade(true)
                 .build(),
             loading = {
-                Box(modifier = modifier.background(Color.Black))
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black))
             },
             contentDescription = null,
             contentScale = ContentScale.Fit,
