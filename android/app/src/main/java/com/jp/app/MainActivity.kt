@@ -81,6 +81,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var isScanning by remember { mutableStateOf(false) }
     var isViewing by remember { mutableStateOf(false) }
     var isFavoriteBrowsing by remember { mutableStateOf(false) }
+    var subfolderFilterUri by remember { mutableStateOf<Uri?>(null) }
     val initialCache = remember { mutableStateOf<CachedMediaScan?>(null) }
     var initialCacheLoaded by remember { mutableStateOf(false) }
     var mediaItems by remember { mutableStateOf(emptyList<MediaItem>()) }
@@ -109,6 +110,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         folders = newFolders
         prefs.edit().putStringSet("folder_uris", newFolders.toSet()).apply()
+        subfolderFilterUri = null
     }
 
     fun saveNomedia(value: Boolean) {
@@ -117,6 +119,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         respectNomedia = value
         prefs.edit().putBoolean("respect_nomedia", value).apply()
+        subfolderFilterUri = null
     }
 
     fun rescanMedia() {
@@ -124,6 +127,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         initialCache.value = null
         mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
         rescanRequest++
+        subfolderFilterUri = null
     }
 
     fun clearMediaCacheOnly() {
@@ -140,6 +144,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             isViewing = false
             isFavoriteBrowsing = false
             currentIndex = 0
+            subfolderFilterUri = null
         }
         scanMessage = "收藏已清空。"
     }
@@ -163,6 +168,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             currentIndex = 0
             isViewing = false
             isFavoriteBrowsing = false
+            subfolderFilterUri = null
             isScanning = false
             scanProgress = null
 
@@ -215,16 +221,19 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 isViewing = false
                 isFavoriteBrowsing = false
                 scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
+                subfolderFilterUri = null
             }
             if (isViewing && mediaItems.isEmpty()) {
                 isViewing = false
                 isFavoriteBrowsing = false
+                subfolderFilterUri = null
             }
         } catch (error: CancellationException) {
             throw error
         } catch (_: SecurityException) {
             isViewing = false
             isFavoriteBrowsing = false
+            subfolderFilterUri = null
             mediaItems = emptyList()
             hasScanned = true
             clearCachedMediaScan(prefs)
@@ -234,6 +243,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         } catch (error: Exception) {
             isViewing = false
             isFavoriteBrowsing = false
+            subfolderFilterUri = null
             mediaItems = emptyList()
             hasScanned = true
             clearCachedMediaScan(prefs)
@@ -252,6 +262,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaItems = reshuffleAvoidingFirst(mediaItems, mediaItems.firstOrNull()?.uri?.toString())
             currentIndex = 0
             isFavoriteBrowsing = false
+            subfolderFilterUri = null
             isViewing = true
         }
     }
@@ -266,14 +277,30 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaItems = reshuffleAvoidingFirst(mediaItems, favoriteItems.firstOrNull()?.uri?.toString())
             currentIndex = 0
             isFavoriteBrowsing = true
+            subfolderFilterUri = null
             isViewing = true
         }
     }
 
-    val visibleItems = if (isFavoriteBrowsing) {
-        mediaItems.filter { it.uri.toString() in favoriteUris }
-    } else {
-        mediaItems
+    val visibleItems = when {
+        isFavoriteBrowsing -> mediaItems.filter { it.uri.toString() in favoriteUris }
+        subfolderFilterUri != null -> mediaItems.filter { it.folderUri == subfolderFilterUri }
+        else -> mediaItems
+    }
+
+    fun toggleSubfolderFilter() {
+        if (visibleItems.isEmpty()) return
+        val currentItem = visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)]
+        val nextFilterUri = if (subfolderFilterUri == null) currentItem.folderUri else null
+        val nextItems = if (nextFilterUri == null) {
+            mediaItems
+        } else {
+            mediaItems.filter { it.folderUri == nextFilterUri }
+        }
+        val nextIndex = nextItems.indexOfFirst { it.uri == currentItem.uri }
+        subfolderFilterUri = nextFilterUri
+        isFavoriteBrowsing = false
+        currentIndex = nextIndex.coerceAtLeast(0)
     }
 
     BackHandler(enabled = isViewing) {
@@ -281,6 +308,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         isFavoriteBrowsing = false
         showSettings = false
         mediaLoadError = false
+        subfolderFilterUri = null
     }
 
     if (isViewing && visibleItems.isNotEmpty()) {
@@ -288,6 +316,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaItems = visibleItems,
             currentIndex = currentIndex.coerceIn(0, visibleItems.lastIndex),
             isFavoriteBrowsing = isFavoriteBrowsing,
+            subfolderFilterUri = subfolderFilterUri,
             onNext = {
                 if (visibleItems.isNotEmpty()) {
                     currentIndex = (currentIndex + 1) % visibleItems.size
@@ -323,8 +352,10 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             onBack = {
                 isViewing = false
                 isFavoriteBrowsing = false
+                subfolderFilterUri = null
             },
             onSettings = { showSettings = !showSettings },
+            onToggleSubfolderFilter = { toggleSubfolderFilter() },
             onMediaLoadError = {
                 mediaLoadError = true
             }
@@ -385,6 +416,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                     mediaLoadError = false
                     isViewing = false
                     isFavoriteBrowsing = false
+                    subfolderFilterUri = null
                     rescanMedia()
                 }) {
                     androidx.compose.material3.Text("重新扫描")

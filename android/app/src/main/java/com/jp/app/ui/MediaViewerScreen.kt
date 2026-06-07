@@ -18,6 +18,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -64,12 +65,14 @@ fun MediaViewerScreen(
     mediaItems: List<MediaItem>,
     currentIndex: Int,
     isFavoriteBrowsing: Boolean,
+    subfolderFilterUri: Uri?,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     onBack: () -> Unit,
     onSettings: () -> Unit,
+    onToggleSubfolderFilter: () -> Unit,
     onMediaLoadError: () -> Unit
 ) {
     if (mediaItems.isEmpty()) {
@@ -111,6 +114,7 @@ fun MediaViewerScreen(
         }
     }
     val folderName = item.folderUri.lastPathSegment ?: item.folderUri.toString()
+    val isSubfolderFiltered = subfolderFilterUri != null
     val swipeScale = if (contentOffsetY.value < 0f) {
         (1f + contentOffsetY.value / 1000f).coerceAtLeast(0.9f)
     } else {
@@ -318,7 +322,7 @@ fun MediaViewerScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "${currentIndex + 1} / ${mediaItems.size}${if (isFavoriteBrowsing) " · 收藏" else if (isFavorite) " · 已收藏" else ""}",
+                        text = "${currentIndex + 1} / ${mediaItems.size}${if (isFavoriteBrowsing) " · 收藏" else if (isFavorite) " · 已收藏" else ""}${if (isSubfolderFiltered) " · 📁 $folderName" else ""}",
                         color = Color.White
                     )
                 },
@@ -330,6 +334,13 @@ fun MediaViewerScreen(
                 actions = {
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Default.Settings, "设置", tint = Color.White)
+                    }
+                    IconButton(onClick = onToggleSubfolderFilter) {
+                        Icon(
+                            Icons.Default.FilterList,
+                            if (isSubfolderFiltered) "查看全部" else "只看此文件夹",
+                            tint = if (isSubfolderFiltered) MaterialTheme.colorScheme.primary else Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -366,7 +377,7 @@ fun MediaViewerScreen(
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "大小：${formatFileSize(item.size)} · 文件夹：$folderName",
+                    text = "大小：${formatFileSize(item.size)} · 文件夹：$folderName${if (isSubfolderFiltered) " 📁 子文件夹模式" else ""}",
                     color = Color.White.copy(alpha = 0.75f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
