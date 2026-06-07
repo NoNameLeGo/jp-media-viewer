@@ -246,6 +246,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         } else if (mediaItems.isEmpty()) {
             scanMessage = "没有找到图片或视频。可能原因：\n1. 所选目录没有支持的媒体文件\n2. .nomedia 过滤隐藏了部分目录\n3. 文件夹授权已失效，请删除后重新添加"
         } else {
+            mediaItems = reshuffleAvoidingFirst(mediaItems, mediaItems.firstOrNull()?.uri?.toString())
             currentIndex = 0
             isFavoriteBrowsing = false
             isViewing = true
@@ -264,6 +265,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         } else if (favoriteItems.isEmpty()) {
             scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
         } else {
+            mediaItems = reshuffleAvoidingFirst(mediaItems, favoriteItems.firstOrNull()?.uri?.toString())
             currentIndex = 0
             isFavoriteBrowsing = true
             isViewing = true
@@ -487,6 +489,21 @@ private fun calculateMediaCacheSizeBytes(prefs: SharedPreferences): Long {
         (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null)?.length ?: 0).toLong()
 }
 
+
+private fun reshuffleAvoidingFirst(items: List<MediaItem>, previousFirstUri: String?): List<MediaItem> {
+    if (items.size < 2 || previousFirstUri == null) return items.shuffled()
+
+    val shuffled = items.shuffled().toMutableList()
+    if (shuffled.firstOrNull()?.uri?.toString() != previousFirstUri) return shuffled
+
+    val swapIndex = shuffled.indexOfFirst { it.uri.toString() != previousFirstUri }
+    if (swapIndex > 0) {
+        val first = shuffled[0]
+        shuffled[0] = shuffled[swapIndex]
+        shuffled[swapIndex] = first
+    }
+    return shuffled
+}
 
 private fun mediaCacheFoldersKey(folders: List<String>): String {
     return folders.sorted().joinToString("\n")
