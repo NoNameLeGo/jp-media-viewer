@@ -29,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Locale
 
 private const val PREF_MEDIA_CACHE_FOLDERS = "media_cache_folders"
 private const val PREF_MEDIA_CACHE_RESPECT_NOMEDIA = "media_cache_respect_nomedia"
@@ -284,7 +285,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 
     val visibleItems = when {
         isFavoriteBrowsing -> mediaItems.filter { it.uri.toString() in favoriteUris }
-        subfolderFilterUri != null -> mediaItems.filter { it.folderUri == subfolderFilterUri }
+        subfolderFilterUri != null -> mediaItems.filter { it.folderUri == subfolderFilterUri }.sortedByFileName()
         else -> mediaItems
     }
 
@@ -295,7 +296,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         val nextItems = if (nextFilterUri == null) {
             mediaItems
         } else {
-            mediaItems.filter { it.folderUri == nextFilterUri }
+            mediaItems.filter { it.folderUri == nextFilterUri }.sortedByFileName()
         }
         val nextIndex = nextItems.indexOfFirst { it.uri == currentItem.uri }
         subfolderFilterUri = nextFilterUri
@@ -517,6 +518,10 @@ private fun clearCachedMediaScan(prefs: SharedPreferences) {
 private fun calculateMediaCacheSizeBytes(prefs: SharedPreferences): Long {
     return (prefs.getString(PREF_MEDIA_CACHE_ITEMS, null)?.length ?: 0).toLong() +
         (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null)?.length ?: 0).toLong()
+}
+
+private fun List<MediaItem>.sortedByFileName(): List<MediaItem> {
+    return sortedWith(compareBy<MediaItem> { it.name.lowercase(Locale.ROOT) }.thenBy { it.name })
 }
 
 
