@@ -32,6 +32,7 @@ JP Media Viewer is a single-module Android app for browsing local images and vid
 - **Do not run local Gradle builds during agent development.** Agents must not invoke `./gradlew`, `gradlew.bat`, or local `assemble*` tasks for verification.
 - **Build verification:** use GitHub Actions (`.github/workflows/build.yml`) to build debug APKs and release APKs.
 - **Human/local fallback only:** local commands remain `./gradlew assembleDebug` / `gradlew.bat assembleDebug` and `./gradlew assembleRelease`, but agents should leave them to the user unless explicitly instructed otherwise.
+- **PR lifecycle for agents:** after a PR build passes in GitHub Actions, agents must merge the PR and delete the branch before starting release builds or yielding, unless the user explicitly asks to leave the PR open.
 - **Output APKs:**
   - Debug: `app/build/outputs/apk/debug/jp-media-viewer-{versionName}-debug.apk`
   - Release: `app/build/outputs/apk/release/jp-media-viewer-{versionName}-release.apk`
@@ -116,5 +117,5 @@ JP Media Viewer is a single-module Android app for browsing local images and vid
 ## Testing & QA
 - There is no checked-in unit or instrumentation test suite or test framework configuration.
 - Current verification is CI-centric: use GitHub Actions (`.github/workflows/build.yml`) for APK build validation instead of local Gradle builds.
-- When changing runtime behavior, update only the affected code paths and verify the GitHub Actions build result when available.
+- When changing runtime behavior, update only the affected code paths, verify the PR GitHub Actions build, then merge the PR and delete its branch before any release build or final handoff unless explicitly told otherwise.
 - For gesture-heavy or UI-logic changes, manual testing on device/emulator is the only verification method.
