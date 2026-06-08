@@ -408,7 +408,12 @@ private fun ScanStatus(
                 isScanning -> {
                     val scanned = scanProgress?.scanned ?: 0
                     val found = scanProgress?.found ?: mediaCount
-                    "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体（可先行浏览）"
+                    val currentFile = scanProgress?.currentFile?.takeIf { it.isNotBlank() }
+                    if (currentFile == null) {
+                        "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体（可先行浏览）"
+                    } else {
+                        "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体（可先行浏览）\n${currentFile}"
+                    }
                 }
                 hasScanned && mediaCount > 0 -> {
                     val scanned = scanProgress?.scanned ?: 0

@@ -259,7 +259,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                     }
                     mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
                 }
-                saveCachedMediaScan(prefs, folders, respectNomedia, progress.foundItems, progress.scanned, complete = false)
+                if (progress.foundItems.isNotEmpty()) {
+                    saveCachedMediaScan(prefs, folders, respectNomedia, progress.foundItems, progress.scanned, complete = false)
+                }
             }
             if (!isViewing) {
                 mediaItems = items.shuffled()
