@@ -10,7 +10,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
@@ -19,6 +19,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 import com.jp.app.data.MediaItem
 import com.jp.app.data.MediaScanner
@@ -36,6 +37,20 @@ private const val PREF_MEDIA_CACHE_RESPECT_NOMEDIA = "media_cache_respect_nomedi
 private const val PREF_MEDIA_CACHE_SCANNED = "media_cache_scanned"
 private const val PREF_MEDIA_CACHE_COMPLETE = "media_cache_complete"
 private const val PREF_MEDIA_CACHE_ITEMS = "media_cache_items"
+private const val PREF_SUBFOLDER_SORT_MODE = "subfolder_sort_mode"
+private const val PREF_SUBFOLDER_SORT_DESCENDING = "subfolder_sort_descending"
+
+private enum class SubfolderSortMode(val prefValue: String, val label: String) {
+    FileName("file_name", "文件名"),
+    FileSize("file_size", "文件大小");
+
+    companion object {
+        fun fromPref(value: String?): SubfolderSortMode {
+            return entries.firstOrNull { it.prefValue == value } ?: FileName
+        }
+    }
+}
+
 
 private data class CachedMediaScan(
     val items: List<MediaItem>,
@@ -97,6 +112,12 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var hasScanned by remember { mutableStateOf(false) }
     var rescanRequest by remember { mutableStateOf(0) }
     var mediaCacheSizeBytes by remember { mutableStateOf(calculateMediaCacheSizeBytes(prefs)) }
+    var subfolderSortMode by remember {
+        mutableStateOf(SubfolderSortMode.fromPref(prefs.getString(PREF_SUBFOLDER_SORT_MODE, null)))
+    }
+    var subfolderSortDescending by remember {
+        mutableStateOf(prefs.getBoolean(PREF_SUBFOLDER_SORT_DESCENDING, false))
+    }
     var favoriteUris by remember {
         mutableStateOf(prefs.getStringSet("favorite_uris", emptySet())?.toSet() ?: emptySet())
     }
@@ -123,6 +144,18 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         respectNomedia = value
         prefs.edit().putBoolean("respect_nomedia", value).apply()
         subfolderFilterUri = null
+    }
+
+    fun saveSubfolderSortMode(value: SubfolderSortMode) {
+        subfolderSortMode = value
+        prefs.edit().putString(PREF_SUBFOLDER_SORT_MODE, value.prefValue).apply()
+        if (subfolderFilterUri != null) currentIndex = 0
+    }
+
+    fun saveSubfolderSortDescending(value: Boolean) {
+        subfolderSortDescending = value
+        prefs.edit().putBoolean(PREF_SUBFOLDER_SORT_DESCENDING, value).apply()
+        if (subfolderFilterUri != null) currentIndex = 0
     }
 
     fun rescanMedia() {
@@ -304,7 +337,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 
     val visibleItems = when {
         isFavoriteBrowsing -> mediaItems.filter { it.uri.toString() in favoriteUris }
-        subfolderFilterUri != null -> mediaItems.filter { it.folderUri == subfolderFilterUri }.sortedByFileName()
+        subfolderFilterUri != null -> mediaItems
+            .filter { it.folderUri == subfolderFilterUri }
+            .sortedBySubfolderOrder(subfolderSortMode, subfolderSortDescending)
         else -> mediaItems
     }
 
@@ -315,9 +350,15 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         val nextItems = if (nextFilterUri == null) {
             mediaItems
         } else {
-            mediaItems.filter { it.folderUri == nextFilterUri }.sortedByFileName()
+            mediaItems
+                .filter { it.folderUri == nextFilterUri }
+                .sortedBySubfolderOrder(subfolderSortMode, subfolderSortDescending)
         }
-        val nextIndex = nextItems.indexOfFirst { it.uri == currentItem.uri }
+        val nextIndex = if (nextFilterUri == null) {
+            nextItems.indexOfFirst { it.uri == currentItem.uri }.coerceAtLeast(0)
+        } else {
+            0
+        }
         subfolderFilterUri = nextFilterUri
         isFavoriteBrowsing = false
         currentIndex = nextIndex.coerceAtLeast(0)
@@ -386,14 +427,32 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 onDismissRequest = { showSettings = false },
                 title = { androidx.compose.material3.Text("设置") },
                 text = {
-                    androidx.compose.foundation.layout.Row(
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                    ) {
-                        androidx.compose.material3.Text("遵守 .nomedia", modifier = Modifier.weight(1f))
-                        androidx.compose.material3.Switch(
-                            checked = respectNomedia,
-                            onCheckedChange = { saveNomedia(it) }
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            androidx.compose.material3.Text("遵守 .nomedia", modifier = Modifier.weight(1f))
+                            androidx.compose.material3.Switch(
+                                checked = respectNomedia,
+                                onCheckedChange = { saveNomedia(it) }
+                            )
+                        }
+
+                        androidx.compose.material3.Text("子文件夹模式排序")
+                        SubfolderSortMode.entries.forEach { mode ->
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                androidx.compose.material3.RadioButton(
+                                    selected = subfolderSortMode == mode,
+                                    onClick = { saveSubfolderSortMode(mode) }
+                                )
+                                androidx.compose.material3.Text(mode.label)
+                            }
+                        }
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            androidx.compose.material3.Text("逆序排列", modifier = Modifier.weight(1f))
+                            androidx.compose.material3.Switch(
+                                checked = subfolderSortDescending,
+                                onCheckedChange = { saveSubfolderSortDescending(it) }
+                            )
+                        }
                     }
                 },
                 confirmButton = {
@@ -543,8 +602,22 @@ private fun calculateMediaCacheSizeBytes(prefs: SharedPreferences): Long {
         (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null)?.length ?: 0).toLong()
 }
 
-private fun List<MediaItem>.sortedByFileName(): List<MediaItem> {
-    return sortedWith(compareBy<MediaItem> { it.name.lowercase(Locale.ROOT) }.thenBy { it.name })
+private fun List<MediaItem>.sortedBySubfolderOrder(
+    mode: SubfolderSortMode,
+    descending: Boolean
+): List<MediaItem> {
+    return sortedWith { left, right ->
+        val primary = when (mode) {
+            SubfolderSortMode.FileName -> left.name.compareTo(right.name, ignoreCase = true)
+            SubfolderSortMode.FileSize -> left.size.compareTo(right.size)
+        }
+        val directedPrimary = if (descending) -primary else primary
+        if (directedPrimary != 0) {
+            directedPrimary
+        } else {
+            left.name.lowercase(Locale.ROOT).compareTo(right.name.lowercase(Locale.ROOT))
+        }
+    }
 }
 
 
