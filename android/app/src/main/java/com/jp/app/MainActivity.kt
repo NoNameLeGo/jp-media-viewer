@@ -42,7 +42,8 @@ private const val PREF_SUBFOLDER_SORT_DESCENDING = "subfolder_sort_descending"
 
 private enum class SubfolderSortMode(val prefValue: String, val label: String) {
     FileName("file_name", "文件名"),
-    FileSize("file_size", "文件大小");
+    FileSize("file_size", "文件大小"),
+    Random("random", "随机");
 
     companion object {
         fun fromPref(value: String?): SubfolderSortMode {
@@ -451,8 +452,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             androidx.compose.material3.Text("逆序排列", modifier = Modifier.weight(1f))
                             androidx.compose.material3.Switch(
-                                checked = subfolderSortDescending,
-                                onCheckedChange = { saveSubfolderSortDescending(it) }
+                                checked = subfolderSortMode != SubfolderSortMode.Random && subfolderSortDescending,
+                                onCheckedChange = { saveSubfolderSortDescending(it) },
+                                enabled = subfolderSortMode != SubfolderSortMode.Random
                             )
                         }
                     }
@@ -608,10 +610,13 @@ private fun List<MediaItem>.sortedBySubfolderOrder(
     mode: SubfolderSortMode,
     descending: Boolean
 ): List<MediaItem> {
+    if (mode == SubfolderSortMode.Random) return this
+
     return sortedWith { left, right ->
         val primary = when (mode) {
             SubfolderSortMode.FileName -> left.name.compareTo(right.name, ignoreCase = true)
             SubfolderSortMode.FileSize -> left.size.compareTo(right.size)
+            SubfolderSortMode.Random -> 0
         }
         val directedPrimary = if (descending) -primary else primary
         if (directedPrimary != 0) {
