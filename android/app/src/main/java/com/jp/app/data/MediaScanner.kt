@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
@@ -11,6 +13,7 @@ class MediaScanner(private val context: Context) {
 
     private companion object {
         const val PROGRESS_UPDATE_INTERVAL = 20
+        const val ITEMS_PROGRESS_UPDATE_INTERVAL = 500
     }
 
     data class ScanProgress(
@@ -37,15 +40,25 @@ class MediaScanner(private val context: Context) {
         val knownUris = initialItems.mapTo(mutableSetOf()) { it.uri.toString() }
         val counters = ScanCounters(scanned = initialScanned, skipped = 0)
 
+        suspend fun emitProgress(currentFile: String, includeItems: Boolean) {
+            val foundItems = if (includeItems) results.toList() else emptyList()
+            onProgress(
+                ScanProgress(
+                    scanned = counters.scanned,
+                    found = results.size,
+                    foundItems = foundItems,
+                    currentFile = currentFile
+                )
+            )
+        }
+
         for (uriString in folderUris) {
             val treeUri = Uri.parse(uriString)
             val rootDoc = DocumentFile.fromTreeUri(context, treeUri) ?: continue
-            scanDirectory(rootDoc, respectNomedia, results, knownUris, initialScanned, counters) {
-                onProgress(ScanProgress(scanned = counters.scanned, found = results.size, foundItems = results.toList(), currentFile = ""))
-            }
+            scanDirectory(rootDoc, respectNomedia, results, knownUris, initialScanned, counters, ::emitProgress)
         }
 
-        onProgress(ScanProgress(scanned = counters.scanned, found = results.size, foundItems = results.toList()))
+        emitProgress(currentFile = "", includeItems = true)
         results.toList()
     }
 
@@ -56,12 +69,15 @@ class MediaScanner(private val context: Context) {
         knownUris: MutableSet<String>,
         initialScanned: Int,
         counters: ScanCounters,
-        onProgress: suspend () -> Unit
+        onProgress: suspend (String, Boolean) -> Unit
     ): Int {
+        currentCoroutineContext().ensureActive()
         if (respectNomedia && dir.findFile(".nomedia") != null) return counters.scanned
 
+        onProgress("正在读取目录：${dir.name ?: dir.uri.lastPathSegment ?: "未知目录"}", false)
         val files = dir.listFiles()
         for (file in files) {
+            currentCoroutineContext().ensureActive()
             if (file.isDirectory) {
                 scanDirectory(file, respectNomedia, results, knownUris, initialScanned, counters, onProgress)
             } else if (file.isFile) {
@@ -70,6 +86,7 @@ class MediaScanner(private val context: Context) {
                     continue
                 }
                 counters.scanned++
+                val currentFile = file.name ?: file.uri.lastPathSegment ?: "未知文件"
                 val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
                 if (isSupportedMedia(mime)) {
                     val uriString = file.uri.toString()
@@ -87,7 +104,7 @@ class MediaScanner(private val context: Context) {
                     }
                 }
                 if (counters.scanned % PROGRESS_UPDATE_INTERVAL == 0) {
-                    onProgress()
+                    onProgress(currentFile, counters.scanned % ITEMS_PROGRESS_UPDATE_INTERVAL == 0)
                 }
             }
         }
