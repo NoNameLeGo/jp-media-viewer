@@ -113,7 +113,7 @@ fun MediaViewerScreen(
             )
         }
     }
-    val folderName = item.folderUri.lastPathSegment ?: item.folderUri.toString()
+    val folderName = deepestFolderName(item.folderUri)
     val isSubfolderFiltered = subfolderFilterUri != null
     val swipeScale = if (contentOffsetY.value < 0f) {
         (1f + contentOffsetY.value / 1000f).coerceAtLeast(0.9f)
@@ -449,6 +449,13 @@ private fun MediaSurface(
             onError = { onLoadError() }
         )
     }
+}
+
+private fun deepestFolderName(folderUri: Uri): String {
+    val segment = folderUri.lastPathSegment?.takeIf { it.isNotBlank() }
+        ?: return folderUri.toString()
+    return segment.substringAfterLast('/').substringAfterLast(':').takeIf { it.isNotBlank() }
+        ?: segment
 }
 
 private fun formatFileSize(bytes: Long): String {
