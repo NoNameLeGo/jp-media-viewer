@@ -32,7 +32,7 @@ class MediaScanner(private val context: Context) {
         for (uriString in folderUris) {
             val treeUri = Uri.parse(uriString)
             val rootDoc = DocumentFile.fromTreeUri(context, treeUri) ?: continue
-            scanned = scanDirectory(rootDoc, treeUri, respectNomedia, results, scanned) { count ->
+            scanned = scanDirectory(rootDoc, respectNomedia, results, scanned) { count ->
                 scanned = count
                 onProgress(ScanProgress(scanned = scanned, found = results.size, foundItems = results.toList(), currentFile = ""))
             }
@@ -44,7 +44,6 @@ class MediaScanner(private val context: Context) {
 
     private suspend fun scanDirectory(
         dir: DocumentFile,
-        rootUri: Uri,
         respectNomedia: Boolean,
         results: MutableList<MediaItem>,
         scanned: Int,
@@ -56,7 +55,7 @@ class MediaScanner(private val context: Context) {
         var scannedCount = scanned
         for (file in files) {
             if (file.isDirectory) {
-                scannedCount = scanDirectory(file, rootUri, respectNomedia, results, scannedCount, onProgress)
+                scannedCount = scanDirectory(file, respectNomedia, results, scannedCount, onProgress)
             } else if (file.isFile) {
                 scannedCount++
                 val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
@@ -67,7 +66,7 @@ class MediaScanner(private val context: Context) {
                             name = file.name ?: "unknown",
                             mimeType = mime,
                             size = file.length(),
-                            folderUri = rootUri,
+                            folderUri = dir.uri,
                             modifiedAt = 0L
                         )
                     )

@@ -29,10 +29,9 @@ JP Media Viewer is a single-module Android app for browsing local images and vid
 - `docs/` — design briefs and notes.
 
 ## Development Commands
-Run from `android/`:
-- **Build debug APK:** `./gradlew assembleDebug` (Windows: `gradlew.bat assembleDebug`)
-- **Build release APK:** `./gradlew assembleRelease` (requires keystore env vars)
-- **CI equivalent:** `./gradlew assembleDebug --no-daemon`
+- **Do not run local Gradle builds during agent development.** Agents must not invoke `./gradlew`, `gradlew.bat`, or local `assemble*` tasks for verification.
+- **Build verification:** use GitHub Actions (`.github/workflows/build.yml`) to build debug APKs and release APKs.
+- **Human/local fallback only:** local commands remain `./gradlew assembleDebug` / `gradlew.bat assembleDebug` and `./gradlew assembleRelease`, but agents should leave them to the user unless explicitly instructed otherwise.
 - **Output APKs:**
   - Debug: `app/build/outputs/apk/debug/jp-media-viewer-{versionName}-debug.apk`
   - Release: `app/build/outputs/apk/release/jp-media-viewer-{versionName}-release.apk`
@@ -116,6 +115,6 @@ Run from `android/`:
 
 ## Testing & QA
 - There is no checked-in unit or instrumentation test suite or test framework configuration.
-- Current verification is build-centric: run `./gradlew assembleDebug` locally and rely on `.github/workflows/build.yml` for CI parity.
-- When changing runtime behavior, verify the debug build still succeeds and update only the affected code paths.
+- Current verification is CI-centric: use GitHub Actions (`.github/workflows/build.yml`) for APK build validation instead of local Gradle builds.
+- When changing runtime behavior, update only the affected code paths and verify the GitHub Actions build result when available.
 - For gesture-heavy or UI-logic changes, manual testing on device/emulator is the only verification method.
