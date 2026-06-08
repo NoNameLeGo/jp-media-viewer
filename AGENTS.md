@@ -4,7 +4,7 @@
 JP Media Viewer is a single-module Android app for browsing local images and videos picked through the Storage Access Framework (SAF). Users add one or more folders, the app scans recursively, caches results locally, supports favorites, and lets users browse media with swipe and tap gestures.
 
 - **License:** AGPL-3.0-only
-- **Current version:** beta0.5.0 (versionCode 26)
+**Current version:** beta0.5.4 (versionCode 30)
 - **Language:** Kotlin
 - **UI:** Jetpack Compose + Material3
 
@@ -28,12 +28,19 @@ JP Media Viewer is a single-module Android app for browsing local images and vid
 - `.github/workflows/` — `build.yml` CI definition.
 - `docs/` — design briefs and notes.
 
-## Development Commands
-- **Do not run local Gradle builds during agent development.** Agents must not invoke `./gradlew`, `gradlew.bat`, or local `assemble*` tasks for verification.
-- **Build verification:** use GitHub Actions (`.github/workflows/build.yml`) to build debug APKs and release APKs.
-- **Human/local fallback only:** local commands remain `./gradlew assembleDebug` / `gradlew.bat assembleDebug` and `./gradlew assembleRelease`, but agents should leave them to the user unless explicitly instructed otherwise.
-- **PR lifecycle for agents:** after a PR build passes in GitHub Actions, agents must merge the PR and delete the branch before starting release builds or yielding, unless the user explicitly asks to leave the PR open.
-- **Output APKs:**
+## Development & Release Commands
+**Do not run local Gradle builds during agent development.** Agents must not invoke `./gradlew`, `gradlew.bat`, or local `assemble*` tasks for verification.
+**Build verification:** use GitHub Actions (`.github/workflows/build.yml`) to build debug APKs and release APKs.
+**Human/local fallback only:** local commands remain `./gradlew assembleDebug` / `gradlew.bat assembleDebug` and `./gradlew assembleRelease`, but agents should leave them to the user unless explicitly instructed otherwise.
+**Release policy:** after every feature/change implementation, agents MUST create a full release (signed release APK + GitHub Release) by pushing a version tag. The PR merge → tag → release workflow:
+  1. Verify PR build passes in GitHub Actions
+  2. Merge PR and delete the branch
+  3. Update version name in `android/app/build.gradle.kts` and `AGENTS.md`
+  4. Update `.github/release-notes.md` with changelog of the new release
+  5. Commit version bump, tag (`git tag betaX.Y.Z`), and push tag (`git push origin betaX.Y.Z`)
+  6. CI handles signed release APK build + GitHub Release creation automatically
+The only exception: if the user explicitly asks to skip release or leave a PR open, follow their instruction.
+**Output APKs:**
   - Debug: `app/build/outputs/apk/debug/jp-media-viewer-{versionName}-debug.apk`
   - Release: `app/build/outputs/apk/release/jp-media-viewer-{versionName}-release.apk`
 
@@ -115,7 +122,7 @@ JP Media Viewer is a single-module Android app for browsing local images and vid
 - **ProGuard:** enabled for release builds but `isMinifyEnabled = false`. Rules keep annotations and `com.jp.app.data.**` model classes.
 
 ## Testing & QA
-- There is no checked-in unit or instrumentation test suite or test framework configuration.
-- Current verification is CI-centric: use GitHub Actions (`.github/workflows/build.yml`) for APK build validation instead of local Gradle builds.
-- When changing runtime behavior, update only the affected code paths, verify the PR GitHub Actions build, then merge the PR and delete its branch before any release build or final handoff unless explicitly told otherwise.
-- For gesture-heavy or UI-logic changes, manual testing on device/emulator is the only verification method.
+There is no checked-in unit or instrumentation test suite or test framework configuration.
+Current verification is CI-centric: use GitHub Actions (`.github/workflows/build.yml`) for APK build validation instead of local Gradle builds.
+When changing runtime behavior, update only the affected code paths, verify the PR GitHub Actions build, then merge the PR, delete its branch, and proceed to create a release as described in Development & Release Commands.
+For gesture-heavy or UI-logic changes, manual testing on device/emulator is the only verification method.
