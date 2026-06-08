@@ -21,24 +21,31 @@ class MediaScanner(private val context: Context) {
         val currentFile: String = ""
     )
 
+    private data class ScanCounters(
+        var scanned: Int,
+        var skipped: Int
+    )
+
     suspend fun scan(
         folderUris: List<String>,
         respectNomedia: Boolean,
+        initialItems: List<MediaItem> = emptyList(),
+        initialScanned: Int = 0,
         onProgress: suspend (ScanProgress) -> Unit = {}
     ): List<MediaItem> = withContext(Dispatchers.IO) {
-        val results = mutableListOf<MediaItem>()
-        var scanned = 0
+        val results = initialItems.toMutableList()
+        val knownUris = initialItems.mapTo(mutableSetOf()) { it.uri.toString() }
+        val counters = ScanCounters(scanned = initialScanned, skipped = 0)
 
         for (uriString in folderUris) {
             val treeUri = Uri.parse(uriString)
             val rootDoc = DocumentFile.fromTreeUri(context, treeUri) ?: continue
-            scanned = scanDirectory(rootDoc, respectNomedia, results, scanned) { count ->
-                scanned = count
-                onProgress(ScanProgress(scanned = scanned, found = results.size, foundItems = results.toList(), currentFile = ""))
+            scanDirectory(rootDoc, respectNomedia, results, knownUris, initialScanned, counters) {
+                onProgress(ScanProgress(scanned = counters.scanned, found = results.size, foundItems = results.toList(), currentFile = ""))
             }
         }
 
-        onProgress(ScanProgress(scanned = scanned, found = results.size, foundItems = results.toList()))
+        onProgress(ScanProgress(scanned = counters.scanned, found = results.size, foundItems = results.toList()))
         results.toList()
     }
 
@@ -46,37 +53,45 @@ class MediaScanner(private val context: Context) {
         dir: DocumentFile,
         respectNomedia: Boolean,
         results: MutableList<MediaItem>,
-        scanned: Int,
-        onProgress: suspend (Int) -> Unit
+        knownUris: MutableSet<String>,
+        initialScanned: Int,
+        counters: ScanCounters,
+        onProgress: suspend () -> Unit
     ): Int {
-        if (respectNomedia && dir.findFile(".nomedia") != null) return scanned
+        if (respectNomedia && dir.findFile(".nomedia") != null) return counters.scanned
 
         val files = dir.listFiles()
-        var scannedCount = scanned
         for (file in files) {
             if (file.isDirectory) {
-                scannedCount = scanDirectory(file, respectNomedia, results, scannedCount, onProgress)
+                scanDirectory(file, respectNomedia, results, knownUris, initialScanned, counters, onProgress)
             } else if (file.isFile) {
-                scannedCount++
+                if (counters.skipped < initialScanned) {
+                    counters.skipped++
+                    continue
+                }
+                counters.scanned++
                 val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
                 if (isSupportedMedia(mime)) {
-                    results.add(
-                        MediaItem(
-                            uri = file.uri,
-                            name = file.name ?: "unknown",
-                            mimeType = mime,
-                            size = file.length(),
-                            folderUri = dir.uri,
-                            modifiedAt = 0L
+                    val uriString = file.uri.toString()
+                    if (knownUris.add(uriString)) {
+                        results.add(
+                            MediaItem(
+                                uri = file.uri,
+                                name = file.name ?: "unknown",
+                                mimeType = mime,
+                                size = file.length(),
+                                folderUri = dir.uri,
+                                modifiedAt = 0L
+                            )
                         )
-                    )
+                    }
                 }
-                if (scannedCount % PROGRESS_UPDATE_INTERVAL == 0) {
-                    onProgress(scannedCount)
+                if (counters.scanned % PROGRESS_UPDATE_INTERVAL == 0) {
+                    onProgress()
                 }
             }
         }
-        return scannedCount
+        return counters.scanned
     }
 
     private fun isSupportedMedia(mimeType: String): Boolean {

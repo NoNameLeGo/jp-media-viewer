@@ -34,11 +34,13 @@ import java.util.Locale
 private const val PREF_MEDIA_CACHE_FOLDERS = "media_cache_folders"
 private const val PREF_MEDIA_CACHE_RESPECT_NOMEDIA = "media_cache_respect_nomedia"
 private const val PREF_MEDIA_CACHE_SCANNED = "media_cache_scanned"
+private const val PREF_MEDIA_CACHE_COMPLETE = "media_cache_complete"
 private const val PREF_MEDIA_CACHE_ITEMS = "media_cache_items"
 
 private data class CachedMediaScan(
     val items: List<MediaItem>,
-    val scanned: Int
+    val scanned: Int,
+    val complete: Boolean
 )
 
 class MainActivity : ComponentActivity() {
@@ -179,7 +181,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         }
 
         val cachedScan = initialCache.value
-        if (cachedScan != null) {
+        if (cachedScan?.complete == true) {
             mediaItems = cachedScan.items.shuffled()
             currentIndex = 0
             hasScanned = true
@@ -193,28 +195,45 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             return@LaunchedEffect
         }
 
+        if (cachedScan != null) {
+            mediaItems = cachedScan.items
+            currentIndex = 0
+            scanProgress = MediaScanner.ScanProgress(
+                scanned = cachedScan.scanned,
+                found = cachedScan.items.size,
+                foundItems = cachedScan.items
+            )
+        } else {
+            scanProgress = MediaScanner.ScanProgress(scanned = 0, found = 0)
+        }
+
         isScanning = true
         hasScanned = false
         scanMessage = null
-
-        scanProgress = MediaScanner.ScanProgress(scanned = 0, found = 0)
         try {
             var scannedCount = 0
-            val items = scanner.scan(folders, respectNomedia) { progress ->
+            val items = scanner.scan(
+                folderUris = folders,
+                respectNomedia = respectNomedia,
+                initialItems = cachedScan?.items ?: emptyList(),
+                initialScanned = cachedScan?.scanned ?: 0
+            ) { progress ->
                 scannedCount = progress.scanned
                 withContext(Dispatchers.Main) {
                     scanProgress = progress
                     if (!isViewing && progress.foundItems.isNotEmpty()) {
                         mediaItems = progress.foundItems
                     }
+                    mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
                 }
+                saveCachedMediaScan(prefs, folders, respectNomedia, progress.foundItems, progress.scanned, complete = false)
             }
             if (!isViewing) {
                 mediaItems = items.shuffled()
                 currentIndex = 0
             }
             withContext(Dispatchers.IO) {
-                saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount)
+                saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount, complete = true)
             }
             mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
             hasScanned = true
@@ -473,7 +492,8 @@ private fun loadCachedMediaScan(
         }
         CachedMediaScan(
             items = items,
-            scanned = prefs.getInt(PREF_MEDIA_CACHE_SCANNED, items.size)
+            scanned = prefs.getInt(PREF_MEDIA_CACHE_SCANNED, items.size),
+            complete = prefs.getBoolean(PREF_MEDIA_CACHE_COMPLETE, true)
         )
     }.getOrNull()
 }
@@ -483,7 +503,8 @@ private fun saveCachedMediaScan(
     folders: List<String>,
     respectNomedia: Boolean,
     items: List<MediaItem>,
-    scanned: Int
+    scanned: Int,
+    complete: Boolean
 ) {
     val itemsJson = JSONArray()
     items.forEach { item ->
@@ -502,6 +523,7 @@ private fun saveCachedMediaScan(
         .putString(PREF_MEDIA_CACHE_FOLDERS, mediaCacheFoldersKey(folders))
         .putBoolean(PREF_MEDIA_CACHE_RESPECT_NOMEDIA, respectNomedia)
         .putInt(PREF_MEDIA_CACHE_SCANNED, scanned)
+        .putBoolean(PREF_MEDIA_CACHE_COMPLETE, complete)
         .putString(PREF_MEDIA_CACHE_ITEMS, itemsJson.toString())
         .apply()
 }
@@ -511,6 +533,7 @@ private fun clearCachedMediaScan(prefs: SharedPreferences) {
         .remove(PREF_MEDIA_CACHE_FOLDERS)
         .remove(PREF_MEDIA_CACHE_RESPECT_NOMEDIA)
         .remove(PREF_MEDIA_CACHE_SCANNED)
+        .remove(PREF_MEDIA_CACHE_COMPLETE)
         .remove(PREF_MEDIA_CACHE_ITEMS)
         .apply()
 }
