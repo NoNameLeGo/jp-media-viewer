@@ -543,7 +543,7 @@ private fun loadCachedMediaScan(
     if (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null) != mediaCacheFoldersKey(folders)) return null
     if (prefs.getBoolean(PREF_MEDIA_CACHE_RESPECT_NOMEDIA, !respectNomedia) != respectNomedia) return null
 
-    return runCatching {
+    val cachedScan = runCatching {
         val cacheFile = mediaCacheFile(context)
         val items = if (cacheFile.exists()) {
             cacheFile.bufferedReader().use { reader -> readMediaItems(JsonReader(reader)) }
@@ -557,6 +557,19 @@ private fun loadCachedMediaScan(
             complete = prefs.getBoolean(PREF_MEDIA_CACHE_COMPLETE, true)
         )
     }.getOrNull()
+
+    if (cachedScan == null) return null
+    if (cachedScan.items.any { !canReadCachedMediaItem(context, it) }) {
+        clearCachedMediaScan(context, prefs)
+        return null
+    }
+    return cachedScan
+}
+
+private fun canReadCachedMediaItem(context: Context, item: MediaItem): Boolean {
+    return runCatching {
+        context.contentResolver.openInputStream(item.uri)?.use { true } ?: false
+    }.getOrDefault(false)
 }
 
 private fun saveCachedMediaScan(
