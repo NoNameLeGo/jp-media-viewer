@@ -4,7 +4,7 @@
 JP Media Viewer is a single-module Android app for browsing local images and videos picked through the Storage Access Framework (SAF). Users add one or more folders, the app scans recursively, caches results locally, supports favorites, and lets users browse media with swipe and tap gestures.
 
 - **License:** AGPL-3.0-only
-**Current version:** beta0.5.8 (versionCode 34)
+**Current version:** beta0.5.9 (versionCode 35)
 - **Language:** Kotlin
 - **UI:** Jetpack Compose + Material3
 
