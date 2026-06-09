@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
+import android.util.JsonReader
+import android.util.JsonWriter
 import android.widget.Toast
 import android.os.Bundle
 import androidx.activity.compose.BackHandler
@@ -28,8 +30,8 @@ import com.jp.app.ui.MediaViewerScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
+import java.io.File
+import java.io.StringReader
 import java.util.Locale
 
 private const val PREF_MEDIA_CACHE_FOLDERS = "media_cache_folders"
@@ -37,6 +39,7 @@ private const val PREF_MEDIA_CACHE_RESPECT_NOMEDIA = "media_cache_respect_nomedi
 private const val PREF_MEDIA_CACHE_SCANNED = "media_cache_scanned"
 private const val PREF_MEDIA_CACHE_COMPLETE = "media_cache_complete"
 private const val PREF_MEDIA_CACHE_ITEMS = "media_cache_items"
+private const val MEDIA_CACHE_FILE_NAME = "media_scan_cache.json"
 private const val PREF_SUBFOLDER_SORT_MODE = "subfolder_sort_mode"
 private const val PREF_SUBFOLDER_SORT_DESCENDING = "subfolder_sort_descending"
 
@@ -112,7 +115,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 
     var hasScanned by remember { mutableStateOf(false) }
     var rescanRequest by remember { mutableStateOf(0) }
-    var mediaCacheSizeBytes by remember { mutableStateOf(calculateMediaCacheSizeBytes(prefs)) }
+    var mediaCacheSizeBytes by remember { mutableStateOf(calculateMediaCacheSizeBytes(context, prefs)) }
     var subfolderSortMode by remember {
         mutableStateOf(SubfolderSortMode.fromPref(prefs.getString(PREF_SUBFOLDER_SORT_MODE, null)))
     }
@@ -125,23 +128,23 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 
     LaunchedEffect(folders, respectNomedia) {
         initialCache.value = withContext(Dispatchers.IO) {
-            loadCachedMediaScan(prefs, folders, respectNomedia)
+            loadCachedMediaScan(context, prefs, folders, respectNomedia)
         }
         initialCacheLoaded = true
     }
     fun saveFolders(newFolders: List<String>) {
-        clearCachedMediaScan(prefs)
+        clearCachedMediaScan(context, prefs)
         initialCache.value = null
-        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
         folders = newFolders
         prefs.edit().putStringSet("folder_uris", newFolders.toSet()).apply()
         subfolderFilterUri = null
     }
 
     fun saveNomedia(value: Boolean) {
-        clearCachedMediaScan(prefs)
+        clearCachedMediaScan(context, prefs)
         initialCache.value = null
-        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
         respectNomedia = value
         prefs.edit().putBoolean("respect_nomedia", value).apply()
         subfolderFilterUri = null
@@ -160,17 +163,17 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     }
 
     fun rescanMedia() {
-        clearCachedMediaScan(prefs)
+        clearCachedMediaScan(context, prefs)
         initialCache.value = null
-        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
         rescanRequest++
         subfolderFilterUri = null
     }
 
     fun clearMediaCacheOnly() {
-        clearCachedMediaScan(prefs)
+        clearCachedMediaScan(context, prefs)
         initialCache.value = null
-        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+        mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
         scanMessage = "媒体缓存已清除。当前扫描结果仍可继续浏览，需要刷新时请重新扫描。"
     }
 
@@ -258,10 +261,12 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                     if (!isViewing && progress.foundItems.isNotEmpty()) {
                         mediaItems = progress.foundItems
                     }
-                    mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+                    mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
                 }
                 if (progress.foundItems.isNotEmpty()) {
-                    saveCachedMediaScan(prefs, folders, respectNomedia, progress.foundItems, progress.scanned, complete = false)
+                    runCatching {
+                        saveCachedMediaScan(context, prefs, folders, respectNomedia, progress.foundItems, progress.scanned, complete = false)
+                    }
                 }
             }
             if (!isViewing) {
@@ -269,9 +274,11 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 currentIndex = 0
             }
             withContext(Dispatchers.IO) {
-                saveCachedMediaScan(prefs, folders, respectNomedia, items, scannedCount, complete = true)
+                runCatching {
+                    saveCachedMediaScan(context, prefs, folders, respectNomedia, items, scannedCount, complete = true)
+                }
             }
-            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
             hasScanned = true
             if (isFavoriteBrowsing && mediaItems.none { it.uri.toString() in favoriteUris }) {
                 isViewing = false
@@ -292,9 +299,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             subfolderFilterUri = null
             mediaItems = emptyList()
             hasScanned = true
-            clearCachedMediaScan(prefs)
+            clearCachedMediaScan(context, prefs)
             initialCache.value = null
-            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
             scanMessage = "无法读取所选文件夹。请删除该文件夹后重新添加授权。"
         } catch (error: Exception) {
             isViewing = false
@@ -302,9 +309,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             subfolderFilterUri = null
             mediaItems = emptyList()
             hasScanned = true
-            clearCachedMediaScan(prefs)
+            clearCachedMediaScan(context, prefs)
             initialCache.value = null
-            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(prefs)
+            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
             scanMessage = "扫描失败：${error.localizedMessage ?: "未知错误"}"
         } finally {
             isScanning = false
@@ -528,6 +535,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
 }
 
 private fun loadCachedMediaScan(
+    context: Context,
     prefs: SharedPreferences,
     folders: List<String>,
     respectNomedia: Boolean
@@ -535,23 +543,13 @@ private fun loadCachedMediaScan(
     if (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null) != mediaCacheFoldersKey(folders)) return null
     if (prefs.getBoolean(PREF_MEDIA_CACHE_RESPECT_NOMEDIA, !respectNomedia) != respectNomedia) return null
 
-    val cacheJson = prefs.getString(PREF_MEDIA_CACHE_ITEMS, null) ?: return null
     return runCatching {
-        val itemsJson = JSONArray(cacheJson)
-        val items = buildList {
-            for (index in 0 until itemsJson.length()) {
-                val itemJson = itemsJson.getJSONObject(index)
-                add(
-                    MediaItem(
-                        uri = Uri.parse(itemJson.getString("uri")),
-                        name = itemJson.getString("name"),
-                        mimeType = itemJson.getString("mimeType"),
-                        size = itemJson.getLong("size"),
-                        folderUri = Uri.parse(itemJson.getString("folderUri")),
-                        modifiedAt = itemJson.optLong("modifiedAt", 0L)
-                    )
-                )
-            }
+        val cacheFile = mediaCacheFile(context)
+        val items = if (cacheFile.exists()) {
+            cacheFile.bufferedReader().use { reader -> readMediaItems(JsonReader(reader)) }
+        } else {
+            val legacyCacheJson = prefs.getString(PREF_MEDIA_CACHE_ITEMS, null) ?: return null
+            StringReader(legacyCacheJson).use { reader -> readMediaItems(JsonReader(reader)) }
         }
         CachedMediaScan(
             items = items,
@@ -562,6 +560,7 @@ private fun loadCachedMediaScan(
 }
 
 private fun saveCachedMediaScan(
+    context: Context,
     prefs: SharedPreferences,
     folders: List<String>,
     respectNomedia: Boolean,
@@ -569,17 +568,15 @@ private fun saveCachedMediaScan(
     scanned: Int,
     complete: Boolean
 ) {
-    val itemsJson = JSONArray()
-    items.forEach { item ->
-        itemsJson.put(
-            JSONObject()
-                .put("uri", item.uri.toString())
-                .put("name", item.name)
-                .put("mimeType", item.mimeType)
-                .put("size", item.size)
-                .put("folderUri", item.folderUri.toString())
-                .put("modifiedAt", item.modifiedAt)
-        )
+    val cacheFile = mediaCacheFile(context)
+    val tempFile = File(cacheFile.parentFile, "${cacheFile.name}.tmp")
+    tempFile.parentFile?.mkdirs()
+    tempFile.bufferedWriter().use { writer ->
+        JsonWriter(writer).use { jsonWriter -> writeMediaItems(jsonWriter, items) }
+    }
+    if (!tempFile.renameTo(cacheFile)) {
+        cacheFile.delete()
+        check(tempFile.renameTo(cacheFile)) { "无法写入媒体缓存" }
     }
 
     prefs.edit()
@@ -587,11 +584,13 @@ private fun saveCachedMediaScan(
         .putBoolean(PREF_MEDIA_CACHE_RESPECT_NOMEDIA, respectNomedia)
         .putInt(PREF_MEDIA_CACHE_SCANNED, scanned)
         .putBoolean(PREF_MEDIA_CACHE_COMPLETE, complete)
-        .putString(PREF_MEDIA_CACHE_ITEMS, itemsJson.toString())
+        .remove(PREF_MEDIA_CACHE_ITEMS)
         .apply()
 }
 
-private fun clearCachedMediaScan(prefs: SharedPreferences) {
+private fun clearCachedMediaScan(context: Context, prefs: SharedPreferences) {
+    mediaCacheFile(context).delete()
+    File(mediaCacheFile(context).parentFile, "${MEDIA_CACHE_FILE_NAME}.tmp").delete()
     prefs.edit()
         .remove(PREF_MEDIA_CACHE_FOLDERS)
         .remove(PREF_MEDIA_CACHE_RESPECT_NOMEDIA)
@@ -601,9 +600,73 @@ private fun clearCachedMediaScan(prefs: SharedPreferences) {
         .apply()
 }
 
-private fun calculateMediaCacheSizeBytes(prefs: SharedPreferences): Long {
-    return (prefs.getString(PREF_MEDIA_CACHE_ITEMS, null)?.length ?: 0).toLong() +
+private fun calculateMediaCacheSizeBytes(context: Context, prefs: SharedPreferences): Long {
+    return mediaCacheFile(context).length() +
+        (prefs.getString(PREF_MEDIA_CACHE_ITEMS, null)?.length ?: 0).toLong() +
         (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null)?.length ?: 0).toLong()
+}
+
+private fun mediaCacheFile(context: Context): File {
+    return File(context.filesDir, MEDIA_CACHE_FILE_NAME)
+}
+
+private fun readMediaItems(reader: JsonReader): List<MediaItem> {
+    return buildList {
+        reader.beginArray()
+        while (reader.hasNext()) {
+            var uri: Uri? = null
+            var name = "unknown"
+            var mimeType = ""
+            var size = 0L
+            var folderUri: Uri? = null
+            var modifiedAt = 0L
+
+            reader.beginObject()
+            while (reader.hasNext()) {
+                when (reader.nextName()) {
+                    "uri" -> uri = Uri.parse(reader.nextString())
+                    "name" -> name = reader.nextString()
+                    "mimeType" -> mimeType = reader.nextString()
+                    "size" -> size = reader.nextLong()
+                    "folderUri" -> folderUri = Uri.parse(reader.nextString())
+                    "modifiedAt" -> modifiedAt = reader.nextLong()
+                    else -> reader.skipValue()
+                }
+            }
+            reader.endObject()
+
+            val itemUri = uri
+            val itemFolderUri = folderUri
+            if (itemUri != null && itemFolderUri != null) {
+                add(
+                    MediaItem(
+                        uri = itemUri,
+                        name = name,
+                        mimeType = mimeType,
+                        size = size,
+                        folderUri = itemFolderUri,
+                        modifiedAt = modifiedAt
+                    )
+                )
+            }
+        }
+        reader.endArray()
+    }
+}
+
+private fun writeMediaItems(writer: JsonWriter, items: List<MediaItem>) {
+    writer.beginArray()
+    items.forEach { item ->
+        writer.beginObject()
+        writer.name("uri").value(item.uri.toString())
+        writer.name("name").value(item.name)
+        writer.name("mimeType").value(item.mimeType)
+        writer.name("size").value(item.size)
+        writer.name("folderUri").value(item.folderUri.toString())
+        writer.name("modifiedAt").value(item.modifiedAt)
+        writer.endObject()
+    }
+    writer.endArray()
 }
 
 private fun List<MediaItem>.sortedBySubfolderOrder(
