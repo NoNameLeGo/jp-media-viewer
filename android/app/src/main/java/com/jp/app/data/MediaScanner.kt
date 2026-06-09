@@ -25,10 +25,10 @@ class MediaScanner(private val context: Context) {
     )
 
     private data class ScanCounters(
-        var scanned: Int,
-        var skipped: Int
+        var scanned: Int
     )
 
+    @Suppress("UNUSED_PARAMETER")
     suspend fun scan(
         folderUris: List<String>,
         respectNomedia: Boolean,
@@ -38,7 +38,7 @@ class MediaScanner(private val context: Context) {
     ): List<MediaItem> = withContext(Dispatchers.IO) {
         val results = initialItems.toMutableList()
         val knownUris = initialItems.mapTo(mutableSetOf()) { it.uri.toString() }
-        val counters = ScanCounters(scanned = initialScanned, skipped = 0)
+        val counters = ScanCounters(scanned = 0)
 
         suspend fun emitProgress(currentFile: String, includeItems: Boolean) {
             val foundItems = if (includeItems) results.toList() else emptyList()
@@ -55,7 +55,7 @@ class MediaScanner(private val context: Context) {
         for (uriString in folderUris) {
             val treeUri = Uri.parse(uriString)
             val rootDoc = DocumentFile.fromTreeUri(context, treeUri) ?: continue
-            scanDirectory(rootDoc, respectNomedia, results, knownUris, initialScanned, counters, ::emitProgress)
+            scanDirectory(rootDoc, respectNomedia, results, knownUris, counters, ::emitProgress)
         }
 
         emitProgress(currentFile = "", includeItems = true)
@@ -67,7 +67,6 @@ class MediaScanner(private val context: Context) {
         respectNomedia: Boolean,
         results: MutableList<MediaItem>,
         knownUris: MutableSet<String>,
-        initialScanned: Int,
         counters: ScanCounters,
         onProgress: suspend (String, Boolean) -> Unit
     ): Int {
@@ -79,12 +78,8 @@ class MediaScanner(private val context: Context) {
         for (file in files) {
             currentCoroutineContext().ensureActive()
             if (file.isDirectory) {
-                scanDirectory(file, respectNomedia, results, knownUris, initialScanned, counters, onProgress)
+                scanDirectory(file, respectNomedia, results, knownUris, counters, onProgress)
             } else if (file.isFile) {
-                if (counters.skipped < initialScanned) {
-                    counters.skipped++
-                    continue
-                }
                 counters.scanned++
                 val currentFile = file.name ?: file.uri.lastPathSegment ?: "未知文件"
                 val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
@@ -122,7 +117,6 @@ class MediaScanner(private val context: Context) {
             "gif" -> "image/gif"
             "webp" -> "image/webp"
             "bmp" -> "image/bmp"
-            "heic", "heif" -> "image/heif"
             "mp4" -> "video/mp4"
             "mkv" -> "video/x-matroska"
             "webm" -> "video/webm"

@@ -38,7 +38,7 @@ JP Media Viewer is a single-module Android app for browsing local images and vid
   3. Update version name in `android/app/build.gradle.kts` and `AGENTS.md`
   4. Update `.github/release-notes.md` with changelog of the new release
   5. Commit version bump, tag (`git tag betaX.Y.Z`), and push tag (`git push origin betaX.Y.Z`)
-  6. CI handles signed release APK build + GitHub Release creation automatically
+  6. Confirm the tag-triggered GitHub Actions run has started; CI handles signed release APK build + GitHub Release creation automatically. Agents do not need to wait for completion unless the user explicitly asks or reports a failure.
 The only exception: if the user explicitly asks to skip release or leave a PR open, follow their instruction.
 **Output APKs:**
   - Debug: `app/build/outputs/apk/debug/jp-media-viewer-{versionName}-debug.apk`
