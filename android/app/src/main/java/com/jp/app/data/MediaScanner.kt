@@ -158,7 +158,7 @@ class MediaScanner(private val context: Context) {
                                 mimeType = mime,
                                 size = file.length(),
                                 folderUri = dir.uri,
-                                modifiedAt = 0L
+                                modifiedAt = file.lastModified()
                             )
                         )
                     }
