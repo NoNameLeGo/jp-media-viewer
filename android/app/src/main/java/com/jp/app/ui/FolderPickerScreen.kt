@@ -233,7 +233,7 @@ private fun AboutDialog(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 AboutRow(label = "版本号", value = BuildConfig.VERSION_NAME)
-                AboutRow(label = "构建类型", value = "Beta debug build")
+                AboutRow(label = "构建类型", value = BuildConfig.BUILD_TYPE)
                 AboutRow(label = "开发者", value = DEVELOPER_NAME)
                 AboutRow(label = "许可证", value = "AGPL-3.0")
                 AboutRow(label = "项目地址", value = PROJECT_URL)
