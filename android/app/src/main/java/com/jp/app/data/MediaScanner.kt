@@ -28,16 +28,13 @@ class MediaScanner(private val context: Context) {
         var scanned: Int
     )
 
-    @Suppress("UNUSED_PARAMETER")
     suspend fun scan(
         folderUris: List<String>,
         respectNomedia: Boolean,
-        initialItems: List<MediaItem> = emptyList(),
-        initialScanned: Int = 0,
         onProgress: suspend (ScanProgress) -> Unit = {}
     ): List<MediaItem> = withContext(Dispatchers.IO) {
-        val results = initialItems.toMutableList()
-        val knownUris = initialItems.mapTo(mutableSetOf()) { it.uri.toString() }
+        val results = mutableListOf<MediaItem>()
+        val knownUris = mutableSetOf<String>()
         val counters = ScanCounters(scanned = 0)
 
         suspend fun emitProgress(currentFile: String, includeItems: Boolean) {

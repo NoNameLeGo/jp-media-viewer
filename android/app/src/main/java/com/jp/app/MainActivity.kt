@@ -251,9 +251,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             var scannedCount = 0
             val items = scanner.scan(
                 folderUris = folders,
-                respectNomedia = respectNomedia,
-                initialItems = cachedScan?.items ?: emptyList(),
-                initialScanned = cachedScan?.scanned ?: 0
+                respectNomedia = respectNomedia
             ) { progress ->
                 scannedCount = progress.scanned
                 withContext(Dispatchers.Main) {
