@@ -14,8 +14,9 @@ import java.util.Locale
 class MediaScanner(private val context: Context) {
 
     private companion object {
-        const val PROGRESS_UPDATE_INTERVAL = 20
-        const val ITEMS_PROGRESS_UPDATE_INTERVAL = 500
+        const val PROGRESS_UPDATE_INTERVAL = 100
+        const val ITEMS_PROGRESS_UPDATE_INTERVAL = 2_000
+        const val PROGRESS_UPDATE_MIN_INTERVAL_MS = 500L
     }
 
     data class ScanProgress(
@@ -73,8 +74,12 @@ class MediaScanner(private val context: Context) {
         val counters = ScanCounters(scanned = 0)
         val startedAt = SystemClock.elapsedRealtime()
         val folderStats = mutableListOf<MutableFolderScanStats>()
+        var lastProgressAt = 0L
 
-        suspend fun emitProgress(currentFile: String, includeItems: Boolean) {
+        suspend fun emitProgress(currentFile: String, includeItems: Boolean, force: Boolean = false) {
+            val now = SystemClock.elapsedRealtime()
+            if (!force && !includeItems && now - lastProgressAt < PROGRESS_UPDATE_MIN_INTERVAL_MS) return
+            lastProgressAt = now
             val foundItems = if (includeItems) results.toList() else emptyList()
             onProgress(
                 ScanProgress(
@@ -84,7 +89,7 @@ class MediaScanner(private val context: Context) {
                     currentFile = currentFile,
                     skippedNomediaDirs = counters.skippedNomediaDirs,
                     failedDirs = counters.failedDirs,
-                    elapsedMillis = SystemClock.elapsedRealtime() - startedAt,
+                    elapsedMillis = now - startedAt,
                     folderStats = folderStats.map { it.toFolderScanStats() }
                 )
             )
@@ -100,10 +105,12 @@ class MediaScanner(private val context: Context) {
                 stats.failedDirs++
                 continue
             }
-            scanDirectory(rootDoc, respectNomedia, results, knownUris, counters, stats, ::emitProgress)
+            scanDirectory(rootDoc, respectNomedia, results, knownUris, counters, stats) { currentFile, includeItems ->
+                emitProgress(currentFile, includeItems)
+            }
         }
 
-        emitProgress(currentFile = "", includeItems = true)
+        emitProgress(currentFile = "", includeItems = true, force = true)
         results.toList()
     }
 

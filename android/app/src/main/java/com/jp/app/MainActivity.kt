@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import android.util.JsonReader
 import android.util.JsonWriter
 import android.widget.Toast
@@ -29,6 +30,8 @@ import com.jp.app.ui.FolderPickerScreen
 import com.jp.app.ui.MediaViewerScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.StringReader
@@ -40,6 +43,8 @@ private const val PREF_MEDIA_CACHE_SCANNED = "media_cache_scanned"
 private const val PREF_MEDIA_CACHE_COMPLETE = "media_cache_complete"
 private const val PREF_MEDIA_CACHE_ITEMS = "media_cache_items"
 private const val MEDIA_CACHE_FILE_NAME = "media_scan_cache.json"
+private const val PARTIAL_CACHE_MIN_ITEM_DELTA = 1_000
+private const val PARTIAL_CACHE_MIN_INTERVAL_MS = 10_000L
 private const val PREF_SUBFOLDER_SORT_MODE = "subfolder_sort_mode"
 private const val PREF_SUBFOLDER_SORT_DESCENDING = "subfolder_sort_descending"
 
@@ -112,6 +117,8 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     var scanMessage by remember { mutableStateOf<String?>(null) }
     var mediaLoadError by remember { mutableStateOf(false) }
     var scanProgress by remember { mutableStateOf<MediaScanner.ScanProgress?>(null) }
+    var activeScanJob by remember { mutableStateOf<Job?>(null) }
+    var stopScanRequested by remember { mutableStateOf(false) }
 
     var hasScanned by remember { mutableStateOf(false) }
     var rescanRequest by remember { mutableStateOf(0) }
@@ -248,7 +255,11 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         hasScanned = false
         scanMessage = null
         try {
+            stopScanRequested = false
+            activeScanJob = currentCoroutineContext()[Job]
             var scannedCount = 0
+            var lastPartialCacheItemCount = 0
+            var lastPartialCacheSavedAt = SystemClock.elapsedRealtime()
             val items = scanner.scan(
                 folderUris = folders,
                 respectNomedia = respectNomedia
@@ -259,11 +270,20 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                     if (!isViewing && progress.foundItems.isNotEmpty()) {
                         mediaItems = progress.foundItems
                     }
-                    mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
                 }
-                if (progress.foundItems.isNotEmpty()) {
+                val now = SystemClock.elapsedRealtime()
+                val itemDelta = progress.foundItems.size - lastPartialCacheItemCount
+                val shouldSavePartialCache = progress.foundItems.isNotEmpty() &&
+                    (itemDelta >= PARTIAL_CACHE_MIN_ITEM_DELTA || now - lastPartialCacheSavedAt >= PARTIAL_CACHE_MIN_INTERVAL_MS)
+                if (shouldSavePartialCache) {
                     runCatching {
                         saveCachedMediaScan(context, prefs, folders, respectNomedia, progress.foundItems, progress.scanned, complete = false)
+                    }.onSuccess {
+                        lastPartialCacheItemCount = progress.foundItems.size
+                        lastPartialCacheSavedAt = now
+                        withContext(Dispatchers.Main) {
+                            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
+                        }
                     }
                 }
             }
@@ -290,7 +310,11 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                 subfolderFilterUri = null
             }
         } catch (error: CancellationException) {
-            throw error
+            if (!stopScanRequested) throw error
+            if (mediaItems.isNotEmpty()) {
+                hasScanned = false
+                scanMessage = "扫描已停止。已找到的媒体仍可先行浏览，需要完整结果时请重新扫描。"
+            }
         } catch (_: SecurityException) {
             isViewing = false
             isFavoriteBrowsing = false
@@ -313,6 +337,15 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             scanMessage = "扫描失败：${error.localizedMessage ?: "未知错误"}"
         } finally {
             isScanning = false
+            activeScanJob = null
+            stopScanRequested = false
+        }
+    }
+
+    fun stopScanning() {
+        activeScanJob?.let { job ->
+            stopScanRequested = true
+            job.cancel()
         }
     }
 
@@ -480,6 +513,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             onFoldersChanged = { saveFolders(it) },
             onRespectNomediaChanged = { saveNomedia(it) },
             onRescan = { rescanMedia() },
+            onStopScan = { stopScanning() },
             onStartBrowsing = { startBrowsing() },
             onStartFavorites = { startFavoriteBrowsing() },
             isScanning = isScanning,

@@ -36,6 +36,7 @@ fun FolderPickerScreen(
     onFoldersChanged: (List<String>) -> Unit,
     onRespectNomediaChanged: (Boolean) -> Unit,
     onRescan: () -> Unit,
+    onStopScan: () -> Unit,
     onStartBrowsing: () -> Unit,
     onStartFavorites: () -> Unit,
     isScanning: Boolean,
@@ -122,6 +123,9 @@ fun FolderPickerScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onRescan, enabled = folders.isNotEmpty() && !isScanning) {
                     Text("重新扫描")
+                }
+                OutlinedButton(onClick = onStopScan, enabled = isScanning) {
+                    Text("停止扫描")
                 }
             }
             CacheManagement(
