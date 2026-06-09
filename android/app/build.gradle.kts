@@ -13,8 +13,8 @@ android {
         applicationId = "com.jp.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 37
-        versionName = "beta0.5.11"
+        versionCode = 38
+        versionName = "beta0.5.12"
     }
 
     signingConfigs {
