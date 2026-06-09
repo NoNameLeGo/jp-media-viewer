@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
 import androidx.documentfile.provider.DocumentFile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -117,7 +118,11 @@ class MediaScanner(private val context: Context) {
     ): Int {
         currentCoroutineContext().ensureActive()
         val hasNomedia = if (respectNomedia) {
-            runCatching { dir.findFile(".nomedia") != null }.getOrElse {
+            try {
+                dir.findFile(".nomedia") != null
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
                 counters.failedDirs++
                 folderStats.failedDirs++
                 return counters.scanned
@@ -132,7 +137,11 @@ class MediaScanner(private val context: Context) {
         }
 
         onProgress("正在读取目录：${dir.name ?: dir.uri.lastPathSegment ?: "未知目录"}", false)
-        val files = runCatching { dir.listFiles() }.getOrElse {
+        val files = try {
+            dir.listFiles()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
             counters.failedDirs++
             folderStats.failedDirs++
             return counters.scanned
