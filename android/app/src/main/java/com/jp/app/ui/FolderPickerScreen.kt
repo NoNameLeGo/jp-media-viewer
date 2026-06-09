@@ -409,19 +409,22 @@ private fun ScanStatus(
                     val scanned = scanProgress?.scanned ?: 0
                     val found = scanProgress?.found ?: mediaCount
                     val currentFile = scanProgress?.currentFile?.takeIf { it.isNotBlank() }
+                    val details = scanProgress?.scanDetailsText().orEmpty()
                     if (currentFile == null) {
-                        "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体（可先行浏览）"
+                        "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体（可先行浏览）$details"
                     } else {
-                        "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体（可先行浏览）\n${currentFile}"
+                        "正在扫描：已检查 ${scanned} 个文件，找到 ${found} 个媒体（可先行浏览）$details\n${currentFile}"
                     }
                 }
                 hasScanned && mediaCount > 0 -> {
                     val scanned = scanProgress?.scanned ?: 0
-                    "扫描完成：已检查 ${scanned} 个文件，找到 ${mediaCount} 个媒体，可以直接开始浏览"
+                    val details = scanProgress?.scanDetailsText().orEmpty()
+                    "扫描完成：已检查 ${scanned} 个文件，找到 ${mediaCount} 个媒体，可以直接开始浏览$details"
                 }
                 hasScanned -> {
                     val scanned = scanProgress?.scanned ?: 0
-                    "扫描完成：已检查 ${scanned} 个文件，找到 0 个媒体\n可能原因：.nomedia 过滤、目录无媒体、文件夹授权失效"
+                    val details = scanProgress?.scanDetailsText().orEmpty()
+                    "扫描完成：已检查 ${scanned} 个文件，找到 0 个媒体$details\n可能原因：.nomedia 过滤、目录无媒体、文件夹授权失效"
                 }
                 else -> "添加文件夹后会自动扫描"
             }
@@ -432,5 +435,31 @@ private fun ScanStatus(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+private fun MediaScanner.ScanProgress.scanDetailsText(): String {
+    if (elapsedMillis == 0L && skippedNomediaDirs == 0 && failedDirs == 0 && folderStats.isEmpty()) return ""
+
+    val summary = "耗时 ${formatDuration(elapsedMillis)}，跳过 .nomedia 目录 ${skippedNomediaDirs} 个，失败目录 ${failedDirs} 个"
+    val folders = folderStats.joinToString(separator = "\n") { stats ->
+        "- ${stats.name}：检查 ${stats.scanned} 个，媒体 ${stats.found} 个，跳过 ${stats.skippedNomediaDirs} 个，失败 ${stats.failedDirs} 个"
+    }
+    return if (folders.isBlank()) {
+        "\n$summary"
+    } else {
+        "\n$summary\n$folders"
+    }
+}
+
+private fun formatDuration(elapsedMillis: Long): String {
+    if (elapsedMillis < 1000L) return "${elapsedMillis}ms"
+    val seconds = elapsedMillis / 1000L
+    val minutes = seconds / 60L
+    val remainingSeconds = seconds % 60L
+    return if (minutes == 0L) {
+        "${seconds}s"
+    } else {
+        "${minutes}m ${remainingSeconds}s"
     }
 }
