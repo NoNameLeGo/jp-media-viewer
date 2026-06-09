@@ -5,6 +5,7 @@ JP Media Viewer is a single-module Android app for browsing local images and vid
 
 - **License:** AGPL-3.0-only
 **Current version:** beta0.5.12 (versionCode 38)
+- **Next planned version:** beta0.8.0
 - **Language:** Kotlin
 - **UI:** Jetpack Compose + Material3
 
