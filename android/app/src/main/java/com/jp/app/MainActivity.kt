@@ -170,8 +170,18 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     }
 
     fun rescanMedia() {
-        clearCachedMediaScan(context, prefs)
-        initialCache.value = null
+        if (!hasScanned && mediaItems.isNotEmpty()) {
+            initialCache.value = CachedMediaScan(
+                items = mediaItems,
+                scanned = scanProgress?.scanned ?: 0,
+                complete = false
+            )
+        } else {
+            clearCachedMediaScan(context, prefs)
+            initialCache.value = null
+            mediaItems = emptyList()
+            scanProgress = MediaScanner.ScanProgress(scanned = 0, found = 0)
+        }
         mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
         rescanRequest++
         subfolderFilterUri = null
@@ -244,8 +254,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             currentIndex = 0
             scanProgress = MediaScanner.ScanProgress(
                 scanned = cachedScan.scanned,
-                found = cachedScan.items.size,
-                foundItems = cachedScan.items
+                found = cachedScan.items.size
             )
         } else {
             scanProgress = MediaScanner.ScanProgress(scanned = 0, found = 0)
@@ -258,28 +267,31 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             stopScanRequested = false
             activeScanJob = currentCoroutineContext()[Job]
             var scannedCount = 0
-            var lastPartialCacheItemCount = 0
+            var lastPartialCacheItemCount = cachedScan?.items?.size ?: 0
             var lastPartialCacheSavedAt = SystemClock.elapsedRealtime()
             val items = scanner.scan(
                 folderUris = folders,
-                respectNomedia = respectNomedia
+                respectNomedia = respectNomedia,
+                initialItems = cachedScan?.items.orEmpty(),
+                initialScanned = cachedScan?.scanned ?: 0
             ) { progress ->
                 scannedCount = progress.scanned
+                val foundItems = progress.foundItems
                 withContext(Dispatchers.Main) {
-                    scanProgress = progress
-                    if (!isViewing && progress.foundItems.isNotEmpty()) {
-                        mediaItems = progress.foundItems
+                    scanProgress = progress.copy(foundItems = emptyList())
+                    if (!isViewing && foundItems.isNotEmpty()) {
+                        mediaItems = foundItems
                     }
                 }
                 val now = SystemClock.elapsedRealtime()
-                val itemDelta = progress.foundItems.size - lastPartialCacheItemCount
-                val shouldSavePartialCache = progress.foundItems.isNotEmpty() &&
+                val itemDelta = foundItems.size - lastPartialCacheItemCount
+                val shouldSavePartialCache = itemDelta > 0 &&
                     (itemDelta >= PARTIAL_CACHE_MIN_ITEM_DELTA || now - lastPartialCacheSavedAt >= PARTIAL_CACHE_MIN_INTERVAL_MS)
                 if (shouldSavePartialCache) {
                     runCatching {
-                        saveCachedMediaScan(context, prefs, folders, respectNomedia, progress.foundItems, progress.scanned, complete = false)
+                        saveCachedMediaScan(context, prefs, folders, respectNomedia, foundItems, progress.scanned, complete = false)
                     }.onSuccess {
-                        lastPartialCacheItemCount = progress.foundItems.size
+                        lastPartialCacheItemCount = foundItems.size
                         lastPartialCacheSavedAt = now
                         withContext(Dispatchers.Main) {
                             mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
@@ -311,9 +323,15 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             }
         } catch (error: CancellationException) {
             if (!stopScanRequested) throw error
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    saveCachedMediaScan(context, prefs, folders, respectNomedia, mediaItems, scanProgress?.scanned ?: 0, complete = false)
+                }
+            }
+            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
             if (mediaItems.isNotEmpty()) {
                 hasScanned = false
-                scanMessage = "扫描已停止。已找到的媒体仍可先行浏览，需要完整结果时请重新扫描。"
+                scanMessage = "扫描已暂停，进度已保存。可先行浏览已找到的 ${mediaItems.size} 个媒体，继续扫描请点击「继续扫描」。"
             }
         } catch (_: SecurityException) {
             isViewing = false
@@ -522,6 +540,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaCount = mediaItems.size,
             favoriteCount = favoriteUris.size,
             hasScanned = hasScanned,
+            canResumeScan = !hasScanned && mediaItems.isNotEmpty(),
             mediaCacheSizeBytes = mediaCacheSizeBytes,
             onClearMediaCache = { clearMediaCacheOnly() },
             onClearFavorites = { clearFavorites() }
@@ -590,19 +609,9 @@ private fun loadCachedMediaScan(
         )
     }.getOrNull()
 
-    if (cachedScan == null) return null
-    if (cachedScan.items.any { !canReadCachedMediaItem(context, it) }) {
-        clearCachedMediaScan(context, prefs)
-        return null
-    }
     return cachedScan
 }
 
-private fun canReadCachedMediaItem(context: Context, item: MediaItem): Boolean {
-    return runCatching {
-        context.contentResolver.openInputStream(item.uri)?.use { true } ?: false
-    }.getOrDefault(false)
-}
 
 private fun saveCachedMediaScan(
     context: Context,
