@@ -45,6 +45,7 @@ fun FolderPickerScreen(
     mediaCount: Int,
     favoriteCount: Int,
     hasScanned: Boolean,
+    canResumeScan: Boolean,
     mediaCacheSizeBytes: Long,
     onClearMediaCache: () -> Unit,
     onClearFavorites: () -> Unit
@@ -122,10 +123,10 @@ fun FolderPickerScreen(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onRescan, enabled = folders.isNotEmpty() && !isScanning) {
-                    Text("重新扫描")
+                    Text(if (canResumeScan) "继续扫描" else "重新扫描")
                 }
                 OutlinedButton(onClick = onStopScan, enabled = isScanning) {
-                    Text("停止扫描")
+                    Text("暂停扫描")
                 }
             }
             CacheManagement(
@@ -429,6 +430,11 @@ private fun ScanStatus(
                     val scanned = scanProgress?.scanned ?: 0
                     val details = scanProgress?.scanDetailsText().orEmpty()
                     "扫描完成：已检查 ${scanned} 个文件，找到 0 个媒体$details\n可能原因：.nomedia 过滤、目录无媒体、文件夹授权失效"
+                }
+                mediaCount > 0 -> {
+                    val scanned = scanProgress?.scanned ?: 0
+                    val details = scanProgress?.scanDetailsText().orEmpty()
+                    "扫描已暂停：已检查 ${scanned} 个文件，找到 ${mediaCount} 个媒体，进度已保存${details}"
                 }
                 else -> "添加文件夹后会自动扫描"
             }

@@ -7,6 +7,7 @@ import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -67,11 +68,13 @@ class MediaScanner(private val context: Context) {
     suspend fun scan(
         folderUris: List<String>,
         respectNomedia: Boolean,
+        initialItems: List<MediaItem> = emptyList(),
+        initialScanned: Int = 0,
         onProgress: suspend (ScanProgress) -> Unit = {}
     ): List<MediaItem> = withContext(Dispatchers.IO) {
-        val results = mutableListOf<MediaItem>()
-        val knownUris = mutableSetOf<String>()
-        val counters = ScanCounters(scanned = 0)
+        val results = initialItems.toMutableList()
+        val knownUris = initialItems.asSequence().map { it.uri.toString() }.toMutableSet()
+        val counters = ScanCounters(scanned = initialScanned, found = results.size)
         val startedAt = SystemClock.elapsedRealtime()
         val folderStats = mutableListOf<MutableFolderScanStats>()
         var lastProgressAt = 0L
@@ -94,23 +97,29 @@ class MediaScanner(private val context: Context) {
                 )
             )
         }
+        try {
+            for (uriString in folderUris) {
+                val treeUri = Uri.parse(uriString)
+                val rootDoc = DocumentFile.fromTreeUri(context, treeUri)
+                val stats = MutableFolderScanStats(rootDoc?.name ?: treeUri.lastPathSegment ?: "未知目录")
+                folderStats.add(stats)
+                if (rootDoc == null) {
+                    counters.failedDirs++
+                    stats.failedDirs++
+                    continue
+                }
+                scanDirectory(rootDoc, respectNomedia, results, knownUris, counters, stats) { currentFile, includeItems ->
+                    emitProgress(currentFile, includeItems)
+                }
+            }
 
-        for (uriString in folderUris) {
-            val treeUri = Uri.parse(uriString)
-            val rootDoc = DocumentFile.fromTreeUri(context, treeUri)
-            val stats = MutableFolderScanStats(rootDoc?.name ?: treeUri.lastPathSegment ?: "未知目录")
-            folderStats.add(stats)
-            if (rootDoc == null) {
-                counters.failedDirs++
-                stats.failedDirs++
-                continue
+            emitProgress(currentFile = "", includeItems = true, force = true)
+        } catch (error: CancellationException) {
+            withContext(NonCancellable) {
+                emitProgress(currentFile = "", includeItems = true, force = true)
             }
-            scanDirectory(rootDoc, respectNomedia, results, knownUris, counters, stats) { currentFile, includeItems ->
-                emitProgress(currentFile, includeItems)
-            }
+            throw error
         }
-
-        emitProgress(currentFile = "", includeItems = true, force = true)
         results.toList()
     }
 
@@ -158,26 +167,26 @@ class MediaScanner(private val context: Context) {
             if (file.isDirectory) {
                 scanDirectory(file, respectNomedia, results, knownUris, counters, folderStats, onProgress)
             } else if (file.isFile) {
+                val uriString = file.uri.toString()
+                if (uriString in knownUris) continue
+
                 counters.scanned++
                 folderStats.scanned++
                 val currentFile = file.name ?: file.uri.lastPathSegment ?: "未知文件"
                 val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
-                if (isSupportedMedia(mime)) {
-                    val uriString = file.uri.toString()
-                    if (knownUris.add(uriString)) {
-                        counters.found++
-                        folderStats.found++
-                        results.add(
-                            MediaItem(
-                                uri = file.uri,
-                                name = file.name ?: "unknown",
-                                mimeType = mime,
-                                size = file.length(),
-                                folderUri = dir.uri,
-                                modifiedAt = file.lastModified()
-                            )
+                if (isSupportedMedia(mime) && knownUris.add(uriString)) {
+                    counters.found++
+                    folderStats.found++
+                    results.add(
+                        MediaItem(
+                            uri = file.uri,
+                            name = file.name ?: "unknown",
+                            mimeType = mime,
+                            size = file.length(),
+                            folderUri = dir.uri,
+                            modifiedAt = file.lastModified()
                         )
-                    }
+                    )
                 }
                 if (counters.scanned % PROGRESS_UPDATE_INTERVAL == 0) {
                     onProgress(currentFile, counters.scanned % ITEMS_PROGRESS_UPDATE_INTERVAL == 0)
