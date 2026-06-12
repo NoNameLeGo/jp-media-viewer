@@ -386,7 +386,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         } else if (favoriteItems.isEmpty()) {
             scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
         } else {
-            mediaItems = reshuffleAvoidingFirst(mediaItems, favoriteItems.firstOrNull()?.uri?.toString())
+            val shuffledFavorites = favoriteItems.shuffled()
+            val favoriteUriSet = shuffledFavorites.map { it.uri.toString() }.toSet()
+            mediaItems = shuffledFavorites + mediaItems.filter { it.uri.toString() !in favoriteUriSet }
             currentIndex = 0
             isFavoriteBrowsing = true
             subfolderFilterUri = null
