@@ -279,8 +279,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             val items = scanner.scan(
                 folderUris = folders,
                 respectNomedia = respectNomedia,
-                initialItems = cachedScan?.items.orEmpty(),
-                initialScanned = cachedScan?.scanned ?: 0
+                initialItems = cachedScan?.items.orEmpty()
             ) { progress ->
                 scannedCount = progress.scanned
                 val foundItems = progress.foundItems
@@ -346,7 +345,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
             if (pausedItems.isNotEmpty()) {
                 hasScanned = false
-                scanMessage = "扫描已暂停，进度已保存。可先行浏览已找到的 ${pausedItems.size} 个媒体，继续扫描请点击「继续扫描」。"
+                scanMessage = "扫描已暂停，进度已保存。可先行浏览已找到的 ${pausedItems.size} 个媒体，继续补扫请点击「继续补扫」。"
             }
         } catch (_: SecurityException) {
             isViewing = false
@@ -401,7 +400,9 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         } else if (favoriteItems.isEmpty()) {
             scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
         } else {
-            mediaItems = reshuffleAvoidingFirst(mediaItems, favoriteItems.firstOrNull()?.uri?.toString())
+            val shuffledFavorites = favoriteItems.shuffled()
+            val favoriteUriSet = shuffledFavorites.map { it.uri.toString() }.toSet()
+            mediaItems = shuffledFavorites + mediaItems.filter { it.uri.toString() !in favoriteUriSet }
             currentIndex = 0
             isFavoriteBrowsing = true
             subfolderFilterUri = null
