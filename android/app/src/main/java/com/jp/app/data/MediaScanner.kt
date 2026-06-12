@@ -69,12 +69,11 @@ class MediaScanner(private val context: Context) {
         folderUris: List<String>,
         respectNomedia: Boolean,
         initialItems: List<MediaItem> = emptyList(),
-        initialScanned: Int = 0,
         onProgress: suspend (ScanProgress) -> Unit = {}
     ): List<MediaItem> = withContext(Dispatchers.IO) {
         val results = initialItems.toMutableList()
         val knownUris = initialItems.asSequence().map { it.uri.toString() }.toMutableSet()
-        val counters = ScanCounters(scanned = initialScanned, found = results.size)
+        val counters = ScanCounters(scanned = 0, found = results.size)
         val startedAt = SystemClock.elapsedRealtime()
         val folderStats = mutableListOf<MutableFolderScanStats>()
         var lastProgressAt = 0L

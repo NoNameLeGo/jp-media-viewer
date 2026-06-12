@@ -272,8 +272,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             val items = scanner.scan(
                 folderUris = folders,
                 respectNomedia = respectNomedia,
-                initialItems = cachedScan?.items.orEmpty(),
-                initialScanned = cachedScan?.scanned ?: 0
+                initialItems = cachedScan?.items.orEmpty()
             ) { progress ->
                 scannedCount = progress.scanned
                 val foundItems = progress.foundItems
@@ -331,7 +330,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
             if (mediaItems.isNotEmpty()) {
                 hasScanned = false
-                scanMessage = "扫描已暂停，进度已保存。可先行浏览已找到的 ${mediaItems.size} 个媒体，继续扫描请点击「继续扫描」。"
+                scanMessage = "扫描已暂停，进度已保存。可先行浏览已找到的 ${mediaItems.size} 个媒体，继续补扫请点击「继续补扫」。"
             }
         } catch (_: SecurityException) {
             isViewing = false
