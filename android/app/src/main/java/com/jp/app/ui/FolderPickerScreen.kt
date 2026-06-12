@@ -123,7 +123,7 @@ fun FolderPickerScreen(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onRescan, enabled = folders.isNotEmpty() && !isScanning) {
-                    Text(if (canResumeScan) "继续扫描" else "重新扫描")
+                    Text(if (canResumeScan) "继续补扫" else "重新扫描")
                 }
                 OutlinedButton(onClick = onStopScan, enabled = isScanning) {
                     Text("暂停扫描")
