@@ -18,6 +18,8 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -214,7 +216,19 @@ fun MediaViewerScreen(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { showControls = !showControls },
-                        onDoubleTap = { currentOnToggleFavorite() },
+                        onDoubleTap = {
+                            if (item.isImage) {
+                                if (imageScale > 1.01f) {
+                                    imageScale = 1f
+                                    imageOffset = Offset.Zero
+                                    settledZoomScale = 1f
+                                } else {
+                                    imageScale = 2f
+                                    imageOffset = Offset.Zero
+                                    settledZoomScale = 2f
+                                }
+                            }
+                        },
                         onLongPress = { showDetails = true }
                     )
                 }
@@ -370,10 +384,13 @@ fun MediaViewerScreen(
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = if (item.isVideo) "视频" else "图片",
-                        color = Color.White
-                    )
+                    IconButton(onClick = currentOnToggleFavorite) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = if (isFavorite) "取消收藏" else "收藏",
+                            tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.White
+                        )
+                    }
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
