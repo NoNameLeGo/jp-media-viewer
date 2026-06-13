@@ -94,15 +94,15 @@ fun MediaViewerScreen(
     var showDetails by remember { mutableStateOf(false) }
     var isSwipeAnimating by remember { mutableStateOf(false) }
     val currentOnToggleFavorite by rememberUpdatedState(onToggleFavorite)
-    var imageScale by remember(item.uri) { mutableStateOf(1f) }
+    val imageScale = remember(item.uri) { Animatable(1f) }
     var imageOffset by remember(item.uri) { mutableStateOf(Offset.Zero) }
     var imageLoadSize by remember(item.uri) { mutableStateOf(IntSize.Zero) }
     var settledZoomScale by remember(item.uri) { mutableStateOf(1f) }
-    val isImageZoomed = item.isImage && imageScale > 1.01f
+    val isImageZoomed = item.isImage && imageScale.value > 1.01f
     val targetZoomScale = when {
-        imageScale >= 2.40f -> 4f
-        imageScale >= 1.60f -> 2f
-        imageScale >= 1.15f -> 1.5f
+        imageScale.value >= 2.40f -> 4f
+        imageScale.value >= 1.60f -> 2f
+        imageScale.value >= 1.15f -> 1.5f
         else -> 1f
     }
     val imageTargetSize = remember(item.uri, settledZoomScale, imageLoadSize) {
@@ -124,15 +124,15 @@ fun MediaViewerScreen(
     }
     val swipeAlpha = (1f - abs(contentOffsetY.value) / 1600f).coerceAtLeast(0.7f)
 
-    LaunchedEffect(item.uri, imageScale, imageLoadSize) {
+    LaunchedEffect(item.uri, imageScale.value, imageLoadSize) {
         if (!item.isImage || imageLoadSize.width <= 0 || imageLoadSize.height <= 0) return@LaunchedEffect
-        if (imageScale <= 1.01f) {
+        if (imageScale.value <= 1.01f) {
             settledZoomScale = 1f
             return@LaunchedEffect
         }
         val stableScale = targetZoomScale
         kotlinx.coroutines.delay(80)
-        if (imageScale >= stableScale - 0.05f && imageLoadSize.width > 0 && imageLoadSize.height > 0) {
+        if (imageScale.value >= stableScale - 0.05f && imageLoadSize.width > 0 && imageLoadSize.height > 0) {
             settledZoomScale = stableScale
         }
     }
@@ -198,8 +198,8 @@ fun MediaViewerScreen(
                     .fillMaxSize()
                     .graphicsLayer {
                         if (item.isImage) {
-                            scaleX = imageScale
-                            scaleY = imageScale
+                            scaleX = imageScale.value
+                            scaleY = imageScale.value
                             translationX = imageOffset.x
                             translationY = imageOffset.y
                         }
@@ -218,14 +218,14 @@ fun MediaViewerScreen(
                         onTap = { showControls = !showControls },
                         onDoubleTap = {
                             if (item.isImage) {
-                                if (imageScale > 1.01f) {
-                                    imageScale = 1f
+                                scope.launch {
+                                    val nextScale = if (imageScale.value > 1.01f) 1f else 2f
                                     imageOffset = Offset.Zero
-                                    settledZoomScale = 1f
-                                } else {
-                                    imageScale = 2f
-                                    imageOffset = Offset.Zero
-                                    settledZoomScale = 2f
+                                    settledZoomScale = nextScale
+                                    imageScale.animateTo(
+                                        targetValue = nextScale,
+                                        animationSpec = spring(stiffness = 450f, dampingRatio = 0.82f)
+                                    )
                                 }
                             }
                         },
@@ -240,7 +240,7 @@ fun MediaViewerScreen(
                         do {
                             val event = awaitPointerEvent()
                             val pressedChanges = event.changes.filter { it.pressed }
-                            val shouldTransform = pressedChanges.size > 1 || imageScale > 1f
+                            val shouldTransform = pressedChanges.size > 1 || imageScale.value > 1f
                             if (shouldTransform) {
                                 val zoomChange = if (pressedChanges.size > 1) event.calculateZoom() else 1f
                                 val panChange = if (pressedChanges.size > 1) {
@@ -248,8 +248,10 @@ fun MediaViewerScreen(
                                 } else {
                                     pressedChanges.firstOrNull()?.positionChange() ?: Offset.Zero
                                 }
-                                val newScale = (imageScale * zoomChange).coerceIn(1f, 4f)
-                                imageScale = newScale
+                                val newScale = (imageScale.value * zoomChange).coerceIn(1f, 4f)
+                                scope.launch {
+                                    imageScale.snapTo(newScale)
+                                }
                                 imageOffset = clampImageOffset(imageOffset + panChange, newScale)
                                 if (newScale <= 1.01f) {
                                     settledZoomScale = 1f
@@ -258,8 +260,10 @@ fun MediaViewerScreen(
                             }
                         } while (event.changes.any { it.pressed })
 
-                        if (imageScale <= 1.01f) {
-                            imageScale = 1f
+                        if (imageScale.value <= 1.01f) {
+                            scope.launch {
+                                imageScale.snapTo(1f)
+                            }
                             imageOffset = Offset.Zero
                         }
                     }
