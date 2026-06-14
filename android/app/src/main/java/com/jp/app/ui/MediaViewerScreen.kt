@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -96,6 +97,11 @@ fun MediaViewerScreen(
     val currentOnToggleFavorite by rememberUpdatedState(onToggleFavorite)
     val imageScale = remember(item.uri) { Animatable(1f) }
     var imageOffset by remember(item.uri) { mutableStateOf(Offset.Zero) }
+    val animatedImageOffset by animateOffsetAsState(
+        targetValue = imageOffset,
+        animationSpec = spring(stiffness = 450f, dampingRatio = 0.82f),
+        label = "imageOffset"
+    )
     var imageLoadSize by remember(item.uri) { mutableStateOf(IntSize.Zero) }
     var settledZoomScale by remember(item.uri) { mutableStateOf(1f) }
     val isImageZoomed = item.isImage && imageScale.value > 1.01f
@@ -200,8 +206,8 @@ fun MediaViewerScreen(
                         if (item.isImage) {
                             scaleX = imageScale.value
                             scaleY = imageScale.value
-                            translationX = imageOffset.x
-                            translationY = imageOffset.y
+                            translationX = animatedImageOffset.x
+                            translationY = animatedImageOffset.y
                         }
                     },
                 playVideo = true,
@@ -213,15 +219,26 @@ fun MediaViewerScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
+                .pointerInput(item.uri, item.isImage) {
                     detectTapGestures(
                         onTap = { showControls = !showControls },
-                        onDoubleTap = {
+                        onDoubleTap = { tapOffset ->
                             if (item.isImage) {
                                 scope.launch {
                                     val nextScale = if (imageScale.value > 1.01f) 1f else 2f
-                                    imageOffset = Offset.Zero
+                                    val nextOffset = if (nextScale == 1f) {
+                                        Offset.Zero
+                                    } else {
+                                        clampImageOffset(
+                                            Offset(
+                                                x = (screenWidthPx / 2f - tapOffset.x) * (nextScale - 1f),
+                                                y = (screenHeightPx / 2f - tapOffset.y) * (nextScale - 1f)
+                                            ),
+                                            nextScale
+                                        )
+                                    }
                                     settledZoomScale = nextScale
+                                    imageOffset = nextOffset
                                     imageScale.animateTo(
                                         targetValue = nextScale,
                                         animationSpec = spring(stiffness = 450f, dampingRatio = 0.82f)
@@ -249,10 +266,10 @@ fun MediaViewerScreen(
                                     pressedChanges.firstOrNull()?.positionChange() ?: Offset.Zero
                                 }
                                 val newScale = (imageScale.value * zoomChange).coerceIn(1f, 4f)
+                                imageOffset = clampImageOffset(imageOffset + panChange, newScale)
                                 scope.launch {
                                     imageScale.snapTo(newScale)
                                 }
-                                imageOffset = clampImageOffset(imageOffset + panChange, newScale)
                                 if (newScale <= 1.01f) {
                                     settledZoomScale = 1f
                                 }
@@ -261,10 +278,10 @@ fun MediaViewerScreen(
                         } while (event.changes.any { it.pressed })
 
                         if (imageScale.value <= 1.01f) {
+                            imageOffset = Offset.Zero
                             scope.launch {
                                 imageScale.snapTo(1f)
                             }
-                            imageOffset = Offset.Zero
                         }
                     }
                 }
