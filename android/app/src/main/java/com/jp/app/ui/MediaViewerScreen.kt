@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.VectorConverter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
@@ -53,6 +54,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.jp.app.data.MediaItem
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -95,7 +97,7 @@ fun MediaViewerScreen(
     var isSwipeAnimating by remember { mutableStateOf(false) }
     val currentOnToggleFavorite by rememberUpdatedState(onToggleFavorite)
     val imageScale = remember(item.uri) { Animatable(1f) }
-    var imageOffset by remember(item.uri) { mutableStateOf(Offset.Zero) }
+    val imageOffset = remember(item.uri) { Animatable(Offset.Zero, Offset.VectorConverter) }
     var imageLoadSize by remember(item.uri) { mutableStateOf(IntSize.Zero) }
     var settledZoomScale by remember(item.uri) { mutableStateOf(1f) }
     val isImageZoomed = item.isImage && imageScale.value > 1.01f
@@ -200,8 +202,8 @@ fun MediaViewerScreen(
                         if (item.isImage) {
                             scaleX = imageScale.value
                             scaleY = imageScale.value
-                            translationX = imageOffset.x
-                            translationY = imageOffset.y
+                            translationX = imageOffset.value.x
+                            translationY = imageOffset.value.y
                         }
                     },
                 playVideo = true,
@@ -213,18 +215,38 @@ fun MediaViewerScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
+                .pointerInput(item.uri, item.isImage) {
                     detectTapGestures(
                         onTap = { showControls = !showControls },
-                        onDoubleTap = {
+                        onDoubleTap = { tapOffset ->
                             if (item.isImage) {
                                 scope.launch {
                                     val nextScale = if (imageScale.value > 1.01f) 1f else 2f
-                                    imageOffset = Offset.Zero
+                                    val nextOffset = if (nextScale == 1f) {
+                                        Offset.Zero
+                                    } else {
+                                        clampImageOffset(
+                                            Offset(
+                                                x = (screenWidthPx / 2f - tapOffset.x) * (nextScale - 1f),
+                                                y = (screenHeightPx / 2f - tapOffset.y) * (nextScale - 1f)
+                                            ),
+                                            nextScale
+                                        )
+                                    }
                                     settledZoomScale = nextScale
-                                    imageScale.animateTo(
-                                        targetValue = nextScale,
-                                        animationSpec = spring(stiffness = 450f, dampingRatio = 0.82f)
+                                    joinAll(
+                                        launch {
+                                            imageOffset.animateTo(
+                                                targetValue = nextOffset,
+                                                animationSpec = spring(stiffness = 450f, dampingRatio = 0.82f)
+                                            )
+                                        },
+                                        launch {
+                                            imageScale.animateTo(
+                                                targetValue = nextScale,
+                                                animationSpec = spring(stiffness = 450f, dampingRatio = 0.82f)
+                                            )
+                                        }
                                     )
                                 }
                             }
@@ -251,8 +273,8 @@ fun MediaViewerScreen(
                                 val newScale = (imageScale.value * zoomChange).coerceIn(1f, 4f)
                                 scope.launch {
                                     imageScale.snapTo(newScale)
+                                    imageOffset.snapTo(clampImageOffset(imageOffset.value + panChange, newScale))
                                 }
-                                imageOffset = clampImageOffset(imageOffset + panChange, newScale)
                                 if (newScale <= 1.01f) {
                                     settledZoomScale = 1f
                                 }
@@ -263,8 +285,8 @@ fun MediaViewerScreen(
                         if (imageScale.value <= 1.01f) {
                             scope.launch {
                                 imageScale.snapTo(1f)
+                                imageOffset.snapTo(Offset.Zero)
                             }
-                            imageOffset = Offset.Zero
                         }
                     }
                 }
