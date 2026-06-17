@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JP Media Viewer</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a2e;
+    --primary: #7c5cfc;
+    --text: #e0e0e0;
+    --text-dim: #888;
+    --radius: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+  }
+  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  .hero p {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-dim);
+    max-width: 600px;
+    margin-bottom: 32px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+  .btn {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    padding: 14px 36px;
+    border-radius: 40px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,92,252,.4); }
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary);
+    margin-left: 12px;
+  }
+  @media (max-width: 480px) {
+    .btn-outline { margin-left: 0; margin-top: 12px; }
+    .hero .btns { display: flex; flex-direction: column; align-items: center; }
+  }
+
+  /* Sections */
+  section { padding: 80px 0; }
+  section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 48px;
+    text-align: center;
+  }
+
+  /* Features */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: transform .2s;
+  }
+  .feature-card:hover { transform: translateY(-4px); }
+  .feature-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .feature-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+  .feature-card p { color: var(--text-dim); font-size: 0.9rem; }
+
+  /* Tech stack */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .tech-item {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tech-item .label { color: var(--text-dim); font-size: 0.85rem; }
+  .tech-item .value { font-weight: 600; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    border-top: 1px solid #222;
+  }
+  footer a { color: var(--primary); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <span class="badge">v0.6.4 &middot; AGPL-3.0</span>
+  <h1>JP Media Viewer</h1>
+  <p>简洁的 Android 随机媒体浏览器。无需权限，通过 SAF 添加文件夹，自动扫描图片和视频，支持随机浏览、手势切换、收藏列表。</p>
+  <div class="btns">
+    <a class="btn" href="https://github.com/NoNameLeGo/jp-media-viewer/releases" target="_blank">下载 APK</a>
+    <a class="btn btn-outline" href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank">GitHub</a>
+  </div>
+</section>
+
+<div class="container">
+
+<section>
+  <h2>功能特性</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="icon">📂</div>
+      <h3>文件夹选择</h3>
+      <p>通过 SAF 添加图片/视频文件夹，无需存储权限。</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔀</div>
+      <h3>随机浏览</h3>
+      <p>每次浏览随机排序，上滑下一张，下滑上一张。</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">❤️</div>
+      <h3>收藏管理</h3>
+      <p>收藏你喜欢的媒体，支持收藏列表和仅浏览收藏模式。</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">⚡</div>
+      <h3>媒体缓存</h3>
+      <p>扫描结果自动缓存，下次打开无需重复扫描。</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🎨</div>
+      <h3>Material You</h3>
+      <p>Android 12+ 支持 Monet 动态取色，低版本保持兼容。</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔄</div>
+      <h3>暂停/续扫</h3>
+      <p>扫描过程中可暂停，进度保存，随时从断点恢复。</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔍</div>
+      <h3>缩放平移</h3>
+      <p>图片支持双指缩放，放大后可拖动查看细节。</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📁</div>
+      <h3>子文件夹模式</h3>
+      <p>切换到当前媒体所在子文件夹浏览，支持排序。</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>技术栈</h2>
+  <div class="tech-grid">
+    <div class="tech-item"><span class="label">UI</span><span class="value">Jetpack Compose + Material3</span></div>
+    <div class="tech-item"><span class="label">图片</span><span class="value">Coil 2.5</span></div>
+    <div class="tech-item"><span class="label">视频</span><span class="value">Media3 / ExoPlayer 1.2</span></div>
+    <div class="tech-item"><span class="label">文件访问</span><span class="value">SAF</span></div>
+    <div class="tech-item"><span class="label">语言</span><span class="value">Kotlin</span></div>
+    <div class="tech-item"><span class="label">构建</span><span class="value">Gradle + Kotlin DSL</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>许可证</h2>
+  <p style="text-align:center;color:var(--text-dim)">
+    本项目使用 <a href="https://github.com/NoNameLeGo/jp-media-viewer/blob/main/LICENSE" style="color:var(--primary)">GNU Affero General Public License v3.0</a> 发布。
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p><a href="https://github.com/NoNameLeGo/jp-media-viewer">jp-media-viewer</a> &middot; 由 AI 辅助开发 &middot; <a href="https://github.com/NoNameLeGo/jp-media-viewer/issues">反馈问题</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
