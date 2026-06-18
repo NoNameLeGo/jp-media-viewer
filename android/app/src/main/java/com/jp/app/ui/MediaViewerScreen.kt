@@ -544,7 +544,7 @@ fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier, onLoadError: () -> Unit
     }
 
     // Lifecycle: pause on background, release on dispose
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             when (event) {
