@@ -211,11 +211,10 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     }
 
     fun toggleFavorite(item: MediaItem): Set<String> {
-        val uriString = item.uri.toString()
-        val newFavorites = if (uriString in favoriteUris) {
-            favoriteUris - uriString
+        val newFavorites = if (item.uriString in favoriteUris) {
+            favoriteUris - item.uriString
         } else {
-            favoriteUris + uriString
+            favoriteUris + item.uriString
         }
         favoriteUris = newFavorites
         prefs.edit().putStringSet("favorite_uris", newFavorites).apply()
@@ -320,7 +319,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             }
             mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
             hasScanned = true
-            if (isFavoriteBrowsing && mediaItems.none { it.uri.toString() in favoriteUris }) {
+            if (isFavoriteBrowsing && mediaItems.none { it.uriString in favoriteUris }) {
                 isViewing = false
                 isFavoriteBrowsing = false
                 scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
@@ -394,15 +393,15 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     }
 
     fun startFavoriteBrowsing() {
-        val favoriteItems = mediaItems.filter { it.uri.toString() in favoriteUris }
+        val favoriteItems = mediaItems.filter { it.uriString in favoriteUris }
         if (favoriteUris.isEmpty()) {
             scanMessage = "收藏列表为空。浏览图片或视频时双击即可收藏。"
         } else if (favoriteItems.isEmpty()) {
             scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
         } else {
             val shuffledFavorites = favoriteItems.shuffled()
-            val favoriteUriSet = shuffledFavorites.map { it.uri.toString() }.toSet()
-            mediaItems = shuffledFavorites + mediaItems.filter { it.uri.toString() !in favoriteUriSet }
+            val favoriteUriSet = shuffledFavorites.map { it.uriString }.toSet()
+            mediaItems = shuffledFavorites + mediaItems.filter { it.uriString !in favoriteUriSet }
             currentIndex = 0
             isFavoriteBrowsing = true
             subfolderFilterUri = null
@@ -413,7 +412,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
     val visibleItems by remember {
         derivedStateOf {
             when {
-                isFavoriteBrowsing -> mediaItems.filter { it.uri.toString() in favoriteUris }
+                isFavoriteBrowsing -> mediaItems.filter { it.uriString in favoriteUris }
                 subfolderFilterUri != null -> mediaItems
                     .filter { it.folderUri == subfolderFilterUri }
                     .sortedBySubfolderOrder(subfolderSortMode, subfolderSortDescending)
@@ -467,10 +466,10 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                     currentIndex = (currentIndex - 1 + visibleItems.size) % visibleItems.size
                 }
             },
-            isFavorite = visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)].uri.toString() in favoriteUris,
+            isFavorite = visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)].uriString in favoriteUris,
             onToggleFavorite = {
                 val currentItem = visibleItems[currentIndex.coerceIn(0, visibleItems.lastIndex)]
-                val wasFavorite = currentItem.uri.toString() in favoriteUris
+                val wasFavorite = currentItem.uriString in favoriteUris
                 val newFavorites = toggleFavorite(currentItem)
                 Toast.makeText(
                     context,
@@ -478,7 +477,7 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
                     Toast.LENGTH_SHORT
                 ).show()
                 if (isFavoriteBrowsing) {
-                    val remainingCount = mediaItems.count { it.uri.toString() in newFavorites }
+                    val remainingCount = mediaItems.count { it.uriString in newFavorites }
                     if (remainingCount == 0) {
                         isViewing = false
                         isFavoriteBrowsing = false
@@ -732,7 +731,7 @@ private fun writeMediaItems(writer: JsonWriter, items: List<MediaItem>) {
     writer.beginArray()
     items.forEach { item ->
         writer.beginObject()
-        writer.name("uri").value(item.uri.toString())
+        writer.name("uri").value(item.uriString)
         writer.name("name").value(item.name)
         writer.name("mimeType").value(item.mimeType)
         writer.name("size").value(item.size)
@@ -769,9 +768,9 @@ private fun reshuffleAvoidingFirst(items: List<MediaItem>, previousFirstUri: Str
     if (items.size < 2 || previousFirstUri == null) return items.shuffled()
 
     val shuffled = items.shuffled().toMutableList()
-    if (shuffled.firstOrNull()?.uri?.toString() != previousFirstUri) return shuffled
+    if (shuffled.firstOrNull()?.uriString != previousFirstUri) return shuffled
 
-    val swapIndex = shuffled.indexOfFirst { it.uri.toString() != previousFirstUri }
+    val swapIndex = shuffled.indexOfFirst { it.uriString != previousFirstUri }
     if (swapIndex > 0) {
         val first = shuffled[0]
         shuffled[0] = shuffled[swapIndex]

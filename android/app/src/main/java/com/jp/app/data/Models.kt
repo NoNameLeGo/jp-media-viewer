@@ -10,6 +10,9 @@ data class MediaItem(
     val folderUri: Uri,
     val modifiedAt: Long
 ) {
+    /** Cached URI string to avoid repeated allocation in hot paths (favorites checks, filters). */
+    val uriString: String = uri.toString()
+
     val isVideo: Boolean get() = mimeType.startsWith("video/")
     val isImage: Boolean get() = mimeType.startsWith("image/")
 }
