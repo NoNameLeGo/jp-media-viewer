@@ -410,12 +410,16 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
         }
     }
 
-    val visibleItems = when {
-        isFavoriteBrowsing -> mediaItems.filter { it.uri.toString() in favoriteUris }
-        subfolderFilterUri != null -> mediaItems
-            .filter { it.folderUri == subfolderFilterUri }
-            .sortedBySubfolderOrder(subfolderSortMode, subfolderSortDescending)
-        else -> mediaItems
+    val visibleItems by remember {
+        derivedStateOf {
+            when {
+                isFavoriteBrowsing -> mediaItems.filter { it.uri.toString() in favoriteUris }
+                subfolderFilterUri != null -> mediaItems
+                    .filter { it.folderUri == subfolderFilterUri }
+                    .sortedBySubfolderOrder(subfolderSortMode, subfolderSortDescending)
+                else -> mediaItems
+            }
+        }
     }
 
     fun toggleSubfolderFilter() {
