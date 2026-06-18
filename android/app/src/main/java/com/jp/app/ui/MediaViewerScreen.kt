@@ -527,16 +527,39 @@ private fun formatModifiedDate(modifiedAt: Long): String {
 fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier, onLoadError: () -> Unit) {
     val context = LocalContext.current
     val currentOnLoadError by rememberUpdatedState(onLoadError)
-    val player = remember(uri) {
+
+    // Single ExoPlayer instance reused across URI changes
+    val player = remember {
         ExoPlayer.Builder(context).build().apply {
-            setMediaItem(ExoMediaItem.fromUri(uri))
-            prepare()
-            playWhenReady = true
             repeatMode = Player.REPEAT_MODE_ALL
         }
     }
 
-    DisposableEffect(player) {
+    // Swap media item when URI changes (no player recreation)
+    LaunchedEffect(uri) {
+        player.stop()
+        player.setMediaItem(ExoMediaItem.fromUri(uri))
+        player.prepare()
+        player.playWhenReady = true
+    }
+
+    // Lifecycle: pause on background, release on dispose
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> player.pause()
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    if (player.playbackState != Player.STATE_IDLE) player.play()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    DisposableEffect(Unit) {
         val listener = object : Player.Listener {
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                 currentOnLoadError()
