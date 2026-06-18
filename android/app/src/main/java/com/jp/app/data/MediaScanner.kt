@@ -3,7 +3,7 @@ package com.jp.app.data
 import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
-import androidx.documentfile.provider.DocumentFile
+import android.provider.DocumentsContract
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -18,6 +18,22 @@ class MediaScanner(private val context: Context) {
         const val PROGRESS_UPDATE_INTERVAL = 100
         const val ITEMS_PROGRESS_UPDATE_INTERVAL = 2_000
         const val PROGRESS_UPDATE_MIN_INTERVAL_MS = 500L
+
+        val CHILD_PROJECTION = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_SIZE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED
+        )
+
+        const val COL_DOC_ID = 0
+        const val COL_DISPLAY_NAME = 1
+        const val COL_MIME_TYPE = 2
+        const val COL_SIZE = 3
+        const val COL_LAST_MODIFIED = 4
+
+        const val MIME_DIR = DocumentsContract.Document.MIME_TYPE_DIR
     }
 
     data class ScanProgress(
@@ -65,6 +81,18 @@ class MediaScanner(private val context: Context) {
         }
     }
 
+    /**
+     * Represents a child entry from a SAF directory query.
+     */
+    private data class ChildEntry(
+        val documentId: String,
+        val displayName: String,
+        val mimeType: String,
+        val size: Long,
+        val lastModified: Long,
+        val isDirectory: Boolean
+    )
+
     suspend fun scan(
         folderUris: List<String>,
         respectNomedia: Boolean,
@@ -99,15 +127,12 @@ class MediaScanner(private val context: Context) {
         try {
             for (uriString in folderUris) {
                 val treeUri = Uri.parse(uriString)
-                val rootDoc = DocumentFile.fromTreeUri(context, treeUri)
-                val stats = MutableFolderScanStats(rootDoc?.name ?: treeUri.lastPathSegment ?: "未知目录")
+                val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
+                val rootName = rootDocId.substringAfterLast('/', rootDocId.substringAfterLast(':'))
+                val stats = MutableFolderScanStats(rootName)
                 folderStats.add(stats)
-                if (rootDoc == null) {
-                    counters.failedDirs++
-                    stats.failedDirs++
-                    continue
-                }
-                scanDirectory(rootDoc, respectNomedia, results, knownUris, counters, stats) { currentFile, includeItems ->
+
+                scanDirectory(treeUri, rootDocId, respectNomedia, results, knownUris, counters, stats) { currentFile, includeItems ->
                     emitProgress(currentFile, includeItems)
                 }
             }
@@ -122,8 +147,42 @@ class MediaScanner(private val context: Context) {
         results.toList()
     }
 
+    /**
+     * Query children of a directory using direct ContentResolver cursor.
+     * Much faster than DocumentFile.listFiles() which creates a DocumentFile per entry.
+     */
+    private fun queryChildren(treeUri: Uri, parentDocId: String): List<ChildEntry>? {
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentDocId)
+        val entries = mutableListOf<ChildEntry>()
+        try {
+            context.contentResolver.query(childrenUri, CHILD_PROJECTION, null, null, null)?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val docId = cursor.getString(COL_DOC_ID) ?: continue
+                    val name = cursor.getString(COL_DISPLAY_NAME) ?: ""
+                    val mime = cursor.getString(COL_MIME_TYPE) ?: ""
+                    val size = cursor.getLong(COL_SIZE)
+                    val modified = cursor.getLong(COL_LAST_MODIFIED)
+                    entries.add(
+                        ChildEntry(
+                            documentId = docId,
+                            displayName = name,
+                            mimeType = mime,
+                            size = size,
+                            lastModified = modified,
+                            isDirectory = mime == MIME_DIR
+                        )
+                    )
+                }
+            } ?: return null
+        } catch (_: Exception) {
+            return null
+        }
+        return entries
+    }
+
     private suspend fun scanDirectory(
-        dir: DocumentFile,
+        treeUri: Uri,
+        dirDocId: String,
         respectNomedia: Boolean,
         results: MutableList<MediaItem>,
         knownUris: MutableSet<String>,
@@ -132,63 +191,56 @@ class MediaScanner(private val context: Context) {
         onProgress: suspend (String, Boolean) -> Unit
     ): Int {
         currentCoroutineContext().ensureActive()
-        val hasNomedia = if (respectNomedia) {
-            try {
-                dir.findFile(".nomedia") != null
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                counters.failedDirs++
-                folderStats.failedDirs++
-                return counters.scanned
-            }
-        } else {
-            false
+
+        val dirName = dirDocId.substringAfterLast('/', dirDocId.substringAfterLast(':'))
+        onProgress("正在读取目录：$dirName", false)
+
+        val children = queryChildren(treeUri, dirDocId)
+        if (children == null) {
+            counters.failedDirs++
+            folderStats.failedDirs++
+            return counters.scanned
         }
-        if (respectNomedia && hasNomedia) {
+
+        // Check .nomedia in query results (no extra round-trip)
+        if (respectNomedia && children.any { !it.isDirectory && it.displayName == ".nomedia" }) {
             counters.skippedNomediaDirs++
             folderStats.skippedNomediaDirs++
             return counters.scanned
         }
 
-        onProgress("正在读取目录：${dir.name ?: dir.uri.lastPathSegment ?: "未知目录"}", false)
-        val files = try {
-            dir.listFiles()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            counters.failedDirs++
-            folderStats.failedDirs++
-            return counters.scanned
-        }
-        for (file in files) {
+        val dirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, dirDocId)
+
+        for (child in children) {
             currentCoroutineContext().ensureActive()
-            if (file.isDirectory) {
-                scanDirectory(file, respectNomedia, results, knownUris, counters, folderStats, onProgress)
-            } else if (file.isFile) {
-                val uriString = file.uri.toString()
+
+            if (child.isDirectory) {
+                scanDirectory(treeUri, child.documentId, respectNomedia, results, knownUris, counters, folderStats, onProgress)
+            } else {
+                val childUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, child.documentId)
+                val uriString = childUri.toString()
                 if (uriString in knownUris) continue
 
                 counters.scanned++
                 folderStats.scanned++
-                val currentFile = file.name ?: file.uri.lastPathSegment ?: "未知文件"
-                val mime = file.type?.takeIf { it.isNotBlank() } ?: inferMimeType(file.name)
+
+                val mime = child.mimeType.takeIf { it.isNotBlank() } ?: inferMimeType(child.displayName)
                 if (isSupportedMedia(mime) && knownUris.add(uriString)) {
                     counters.found++
                     folderStats.found++
                     results.add(
                         MediaItem(
-                            uri = file.uri,
-                            name = file.name ?: "unknown",
+                            uri = childUri,
+                            name = child.displayName.ifBlank { "unknown" },
                             mimeType = mime,
-                            size = file.length(),
-                            folderUri = dir.uri,
-                            modifiedAt = file.lastModified()
+                            size = child.size,
+                            folderUri = dirUri,
+                            modifiedAt = child.lastModified
                         )
                     )
                 }
                 if (counters.scanned % PROGRESS_UPDATE_INTERVAL == 0) {
-                    onProgress(currentFile, counters.scanned % ITEMS_PROGRESS_UPDATE_INTERVAL == 0)
+                    onProgress(child.displayName, counters.scanned % ITEMS_PROGRESS_UPDATE_INTERVAL == 0)
                 }
             }
         }
