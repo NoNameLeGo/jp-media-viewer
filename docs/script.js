@@ -10,18 +10,26 @@
   // ---- WebGL Particle Tunnel Background ----
   function initWebGL() {
     const canvas = document.getElementById('webgl-bg');
-    if (!canvas || window.innerWidth < 768) return;
+    if (!canvas) return;
     
+    if (window.innerWidth < 768) {
+      canvas.style.display = 'none';
+      return;
+    }
+
+    const cleanupFunctions = [];
+
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) return;
 
-    function resize() {
+    const resizeHandler = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       gl.viewport(0, 0, canvas.width, canvas.height);
-    }
-    resize();
-    window.addEventListener('resize', resize);
+    };
+    resizeHandler();
+    window.addEventListener('resize', resizeHandler);
+    cleanupFunctions.push(() => window.removeEventListener('resize', resizeHandler));
 
     // Vertex shader
     const vsSource = `
@@ -117,11 +125,14 @@
 
     let mouseX = canvas.width / 2;
     let mouseY = canvas.height / 2;
+    let animFrameId;
 
-    document.addEventListener('mousemove', (e) => {
+    const mouseHandler = (e) => {
       mouseX = e.clientX;
       mouseY = canvas.height - e.clientY;
-    });
+    };
+    document.addEventListener('mousemove', mouseHandler);
+    cleanupFunctions.push(() => document.removeEventListener('mousemove', mouseHandler));
 
     let startTime = Date.now();
 
@@ -131,9 +142,14 @@
       gl.uniform2f(uRes, canvas.width, canvas.height);
       gl.uniform2f(uMouse, mouseX, mouseY);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      requestAnimationFrame(render);
+      animFrameId = requestAnimationFrame(render);
     }
     render();
+
+    return () => {
+      cleanupFunctions.forEach(fn => fn());
+      cancelAnimationFrame(animFrameId);
+    };
   }
 
   // ---- Custom Cursor ----
@@ -297,28 +313,37 @@
         const rotateX = (y - centerY) / 15;
         const rotateY = (centerX - x) / 15;
 
-        item.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+        item.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
       });
 
       item.addEventListener('mouseleave', () => {
-        item.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+        item.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
       });
     });
   }
 
   // ---- Magnetic Buttons ----
   function initMagnetic() {
-    const magnets = document.querySelectorAll('[data-magnetic]');
+    const magnets = document.querySelectorAll('[data-magnetic].btn');
     
     magnets.forEach(btn => {
+      let rafId = null;
+      
       btn.addEventListener('mousemove', (e) => {
-        const rect = btn.getBoundingClientRect();
-        const x = e.clientX - rect.left - rect.width / 2;
-        const y = e.clientY - rect.top - rect.height / 2;
-        btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          const rect = btn.getBoundingClientRect();
+          const x = e.clientX - rect.left - rect.width / 2;
+          const y = e.clientY - rect.top - rect.height / 2;
+          btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+        });
       });
 
       btn.addEventListener('mouseleave', () => {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
         btn.style.transform = 'translate(0, 0)';
       });
     });
@@ -410,31 +435,23 @@
     }
   }
 
-  // ---- Smooth Scroll for Anchor Links ----
-  function initSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function(e) {
-        const href = this.getAttribute('href');
-        if (href === '#') return;
-        
-        e.preventDefault();
-        const target = document.querySelector(href);
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
-    });
-  }
-
   // ---- Parallax on Scroll ----
   function initParallax() {
     const heroRight = document.querySelector('.hero-right');
     if (!heroRight) return;
 
+    let ticking = false;
     window.addEventListener('scroll', () => {
-      const scrolled = window.pageYOffset;
-      if (scrolled < window.innerHeight) {
-        heroRight.style.transform = `translateY(${scrolled * 0.1}px)`;
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const scrolled = window.pageYOffset;
+          if (scrolled < window.innerHeight) {
+            heroRight.style.transform = `translateY(${scrolled * 0.05}px)`;
+          } else {
+            heroRight.style.transform = '';
+          }
+        });
+        ticking = true;
       }
     }, { passive: true });
   }
@@ -444,11 +461,22 @@
     const badge = document.getElementById('badgeVersion');
     if (!badge) return;
 
-    fetch('https://api.github.com/repos/NoNameLeGo/jp-media-viewer/releases/latest')
-      .then(res => res.json())
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    fetch('https://api.github.com/repos/NoNameLeGo/jp-media-viewer/releases/latest', {
+      signal: controller.signal
+    })
+      .then(res => {
+        clearTimeout(timeout);
+        return res.json();
+      })
       .then(data => {
-        const version = data.tag_name.replace(/^v|beta/i, '');
-        badge.textContent = `${data.tag_name} · AGPL-3.0`;
+        if (data.tag_name) {
+          badge.textContent = `${data.tag_name} · AGPL-3.0`;
+        } else {
+          badge.textContent = 'AGPL-3.0';
+        }
       })
       .catch(() => {
         badge.textContent = 'AGPL-3.0';
@@ -468,7 +496,6 @@
     initCounters();
     initTimeline();
     initReveal();
-    initSmoothScroll();
     initParallax();
     initVersion();
   }

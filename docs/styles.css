@@ -149,6 +149,10 @@ body {
   gap: 24px;
 }
 
+.marquee-content:hover {
+  animation-play-state: paused;
+}
+
 .marquee-content span {
   font-size: 0.75rem;
   font-weight: 700;
@@ -290,7 +294,7 @@ body {
   gap: 5px;
   background: none;
   border: none;
-  cursor: none;
+  cursor: pointer;
   padding: 4px;
 }
 
@@ -982,4 +986,51 @@ section {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .marquee-content {
+    animation: none;
+    flex-wrap: wrap;
+  }
+  
+  .glitch::before,
+  .glitch::after {
+    display: none;
+  }
+  
+  .pulse-ring {
+    display: none;
+  }
+  
+  .holo-card {
+    animation: none;
+  }
+  
+  .hero-right {
+    animation: none;
+  }
+  
+  .terminal-window {
+    animation: none;
+  }
+  
+  body {
+    cursor: auto;
+  }
+  
+  .cursor-dot, .cursor-outline {
+    display: none !important;
+  }
+  
+  .trail {
+    display: none !important;
+  }
 }

@@ -3,10 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="JP Media Viewer - 简洁的 Android 随机媒体浏览器。无需权限，通过 SAF 添加文件夹，自动扫描图片和视频，支持随机浏览、手势切换、收藏列表。">
+<meta name="keywords" content="JP Media Viewer, Android, image viewer, video player, open source, SAF, Material You">
+<meta name="theme-color" content="#11111b">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="JP Media Viewer">
+<meta property="og:description" content="简洁的 Android 随机媒体浏览器。无需权限，AGPL-3.0 开源。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nonnamlego.github.io/jp-media-viewer/">
+<meta property="og:image" content="https://nonnamlego.github.io/jp-media-viewer/og-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="JP Media Viewer">
+<meta name="twitter:description" content="简洁的 Android 随机媒体浏览器。无需权限，AGPL-3.0 开源。">
+<link rel="canonical" href="https://nonnamlego.github.io/jp-media-viewer/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>JP</text></svg>">
 <title>JP Media Viewer</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body role="main">
 
 <!-- Marquee -->
 <div class="marquee-container">
@@ -63,21 +80,21 @@
 <div class="trail" data-trail="11"></div>
 
 <!-- Navigation -->
-<nav class="navbar" id="navbar">
+<nav class="navbar" id="navbar" role="navigation" aria-label="Main navigation">
   <div class="nav-container">
-    <a href="#" class="nav-logo">
+    <a href="#" class="nav-logo" aria-label="JP Media Viewer home">
       <span class="logo-icon">JP</span>
       <span class="logo-text">Media Viewer</span>
     </a>
-    <div class="nav-links">
-      <a href="#features" class="nav-link" data-magnetic>Features</a>
-      <a href="#techstack" class="nav-link" data-magnetic>Tech Stack</a>
-      <a href="#download" class="nav-link" data-magnetic>Download</a>
-      <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="nav-link nav-github" data-magnetic>
+    <div class="nav-links" role="menubar">
+      <a href="#features" class="nav-link" data-magnetic role="menuitem">Features</a>
+      <a href="#techstack" class="nav-link" data-magnetic role="menuitem">Tech Stack</a>
+      <a href="#download" class="nav-link" data-magnetic role="menuitem">Download</a>
+      <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="nav-link nav-github" data-magnetic role="menuitem" aria-label="View source code on GitHub">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
       </a>
     </div>
-    <button class="nav-toggle" id="navToggle">
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu">
       <span></span><span></span><span></span>
     </button>
   </div>
@@ -96,12 +113,12 @@
       </h1>
       <p class="hero-subtitle">简洁的 Android 随机媒体浏览器。无需权限，通过 SAF 添加文件夹，自动扫描图片和视频，支持随机浏览、手势切换、收藏列表。</p>
       <div class="hero-buttons">
-        <a href="https://github.com/NoNameLeGo/jp-media-viewer/releases" target="_blank" class="btn btn-primary" data-magnetic>
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer/releases" target="_blank" class="btn btn-primary" data-magnetic aria-label="Download APK">
           <span class="btn-glitch"></span>
           <span class="btn-text">下载 APK</span>
           <span class="btn-shine"></span>
         </a>
-        <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="btn btn-outline" data-magnetic>
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="btn btn-outline" data-magnetic aria-label="View GitHub repository">
           <span class="btn-text">GitHub</span>
         </a>
       </div>
@@ -157,13 +174,13 @@
 </section>
 
 <!-- Features Section -->
-<section class="features-section" id="features">
+<section class="features-section" id="features" aria-label="Feature list">
   <div class="container">
     <h2 class="section-title">
       <span class="glitch" data-text="功能特性">功能特性</span>
     </h2>
-    <div class="features-grid">
-      <div class="holo-card" data-tilt>
+    <div class="features-grid" role="list">
+      <article class="holo-card" data-tilt role="listitem">
         <div class="holo-card-glow"></div>
         <div class="holo-card-border"></div>
         <div class="card-content">
@@ -171,8 +188,8 @@
           <h3>文件夹选择</h3>
           <p>通过 SAF 添加图片/视频文件夹，无需存储权限。</p>
         </div>
-      </div>
-      <div class="holo-card" data-tilt>
+      </article>
+      <article class="holo-card" data-tilt role="listitem">
         <div class="holo-card-glow"></div>
         <div class="holo-card-border"></div>
         <div class="card-content">
@@ -180,8 +197,8 @@
           <h3>随机浏览</h3>
           <p>每次浏览随机排序，上滑下一张，下滑上一张。</p>
         </div>
-      </div>
-      <div class="holo-card" data-tilt>
+      </article>
+      <article class="holo-card" data-tilt role="listitem">
         <div class="holo-card-glow"></div>
         <div class="holo-card-border"></div>
         <div class="card-content">
@@ -189,8 +206,8 @@
           <h3>收藏管理</h3>
           <p>收藏你喜欢的媒体，支持收藏列表和仅浏览收藏模式。</p>
         </div>
-      </div>
-      <div class="holo-card" data-tilt>
+      </article>
+      <article class="holo-card" data-tilt role="listitem">
         <div class="holo-card-glow"></div>
         <div class="holo-card-border"></div>
         <div class="card-content">
@@ -198,8 +215,8 @@
           <h3>媒体缓存</h3>
           <p>扫描结果自动缓存，下次打开无需重复扫描。</p>
         </div>
-      </div>
-      <div class="holo-card" data-tilt>
+      </article>
+      <article class="holo-card" data-tilt role="listitem">
         <div class="holo-card-glow"></div>
         <div class="holo-card-border"></div>
         <div class="card-content">
@@ -207,8 +224,8 @@
           <h3>Material You</h3>
           <p>Android 12+ 支持 Monet 动态取色，低版本保持兼容。</p>
         </div>
-      </div>
-      <div class="holo-card" data-tilt>
+      </article>
+      <article class="holo-card" data-tilt role="listitem">
         <div class="holo-card-glow"></div>
         <div class="holo-card-border"></div>
         <div class="card-content">
@@ -216,8 +233,8 @@
           <h3>暂停/续扫</h3>
           <p>扫描过程中可暂停，进度保存，随时从断点恢复。</p>
         </div>
-      </div>
-      <div class="holo-card" data-tilt>
+      </article>
+      <article class="holo-card" data-tilt role="listitem">
         <div class="holo-card-glow"></div>
         <div class="holo-card-border"></div>
         <div class="card-content">
@@ -225,8 +242,8 @@
           <h3>缩放平移</h3>
           <p>图片支持双指缩放，放大后可拖动查看细节。</p>
         </div>
-      </div>
-      <div class="holo-card" data-tilt>
+      </article>
+      <article class="holo-card" data-tilt role="listitem">
         <div class="holo-card-glow"></div>
         <div class="holo-card-border"></div>
         <div class="card-content">
@@ -234,19 +251,19 @@
           <h3>子文件夹模式</h3>
           <p>切换到当前媒体所在子文件夹浏览，支持排序。</p>
         </div>
-      </div>
+      </article>
     </div>
   </div>
 </section>
 
 <!-- Quick Start Timeline -->
-<section class="timeline-section" id="timeline">
+<section class="timeline-section" id="timeline" aria-label="Quick start guide">
   <div class="container">
     <h2 class="section-title">
       <span class="glitch" data-text="快速开始">快速开始</span>
     </h2>
-    <div class="timeline">
-      <div class="timeline-item" data-step="1">
+    <ol class="timeline">
+      <li class="timeline-item" data-step="1">
         <div class="timeline-marker">
           <span class="marker-number">1</span>
         </div>
@@ -255,7 +272,7 @@
           <p>从 GitHub Releases 页面下载最新版本的 APK 文件。</p>
         </div>
       </div>
-      <div class="timeline-item" data-step="2">
+      <li class="timeline-item" data-step="2">
         <div class="timeline-marker">
           <span class="marker-number">2</span>
         </div>
@@ -264,7 +281,7 @@
           <p>安装 APK，打开应用。无需授予任何权限。</p>
         </div>
       </div>
-      <div class="timeline-item" data-step="3">
+      <li class="timeline-item" data-step="3">
         <div class="timeline-marker">
           <span class="marker-number">3</span>
         </div>
@@ -273,7 +290,7 @@
           <p>通过 Android SAF 选择包含图片或视频的文件夹。</p>
         </div>
       </div>
-      <div class="timeline-item" data-step="4">
+      <li class="timeline-item" data-step="4">
         <div class="timeline-marker">
           <span class="marker-number">4</span>
         </div>
@@ -281,39 +298,39 @@
           <h3>开始浏览</h3>
           <p>媒体自动扫描并开始随机浏览，上滑/下滑切换。</p>
         </div>
-      </div>
-    </div>
+      </li>
+    </ol>
   </div>
 </section>
 
 <!-- Tech Stack Section -->
-<section class="tech-section" id="techstack">
+<section class="tech-section" id="techstack" aria-label="Technology stack">
   <div class="container">
     <h2 class="section-title">
       <span class="glitch" data-text="技术栈">技术栈</span>
     </h2>
-    <div class="tech-grid">
-      <div class="tech-item" data-tilt>
+    <div class="tech-grid" role="list">
+      <div class="tech-item" data-tilt role="listitem">
         <span class="tech-label">UI</span>
         <span class="tech-value">Jetpack Compose + Material3</span>
       </div>
-      <div class="tech-item" data-tilt>
+      <div class="tech-item" data-tilt role="listitem">
         <span class="tech-label">图片</span>
         <span class="tech-value">Coil 2.5</span>
       </div>
-      <div class="tech-item" data-tilt>
+      <div class="tech-item" data-tilt role="listitem">
         <span class="tech-label">视频</span>
         <span class="tech-value">Media3 / ExoPlayer 1.2</span>
       </div>
-      <div class="tech-item" data-tilt>
+      <div class="tech-item" data-tilt role="listitem">
         <span class="tech-label">文件访问</span>
         <span class="tech-value">SAF</span>
       </div>
-      <div class="tech-item" data-tilt>
+      <div class="tech-item" data-tilt role="listitem">
         <span class="tech-label">语言</span>
         <span class="tech-value">Kotlin</span>
       </div>
-      <div class="tech-item" data-tilt>
+      <div class="tech-item" data-tilt role="listitem">
         <span class="tech-label">构建</span>
         <span class="tech-value">Gradle + Kotlin DSL</span>
       </div>
@@ -322,7 +339,7 @@
 </section>
 
 <!-- CTA Section -->
-<section class="cta-section" id="download">
+<section class="cta-section" id="download" aria-label="Download call to action">
   <div class="container">
     <div class="cta-content">
       <h2 class="cta-title">
@@ -330,12 +347,12 @@
       </h2>
       <p class="cta-subtitle">开源、免费、零权限。开始你的随机媒体浏览之旅。</p>
       <div class="cta-buttons">
-        <a href="https://github.com/NoNameLeGo/jp-media-viewer/releases" target="_blank" class="btn btn-primary btn-large" data-magnetic>
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer/releases" target="_blank" class="btn btn-primary btn-large" data-magnetic aria-label="Download APK">
           <span class="btn-glitch"></span>
           <span class="btn-text">下载 APK</span>
           <span class="btn-shine"></span>
         </a>
-        <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="btn btn-outline btn-large" data-magnetic>
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="btn btn-outline btn-large" data-magnetic aria-label="Star on GitHub">
           <span class="btn-text">Star on GitHub</span>
         </a>
       </div>
