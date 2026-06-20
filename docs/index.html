@@ -4,218 +4,366 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JP Media Viewer</title>
-<style>
-  :root {
-    --bg: #1e1e2e;
-    --surface: #313244;
-    --primary: #cba6f7;
-    --text: #cdd6f4;
-    --text-dim: #a6adc8;
-    --radius: 16px;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-  }
-  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
-
-  /* Hero */
-  .hero {
-    min-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    background: linear-gradient(135deg, #11111b 0%, #1e1e2e 50%, #181825 100%);
-  }
-  .hero h1 {
-    font-size: clamp(2.5rem, 6vw, 4rem);
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--primary), #89b4fa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 16px;
-  }
-  .hero p {
-    font-size: clamp(1rem, 2vw, 1.25rem);
-    color: var(--text-dim);
-    max-width: 600px;
-    margin-bottom: 32px;
-  }
-  .hero .badge {
-    display: inline-block;
-    background: var(--primary);
-    color: #fff;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    margin-bottom: 24px;
-  }
-  .btn {
-    display: inline-block;
-    background: var(--primary);
-    color: #fff;
-    padding: 14px 36px;
-    border-radius: 40px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 1.1rem;
-    transition: transform .2s, box-shadow .2s;
-  }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(203,166,247,.4); }
-  .btn-outline {
-    background: transparent;
-    border: 2px solid var(--primary);
-    margin-left: 12px;
-  }
-  @media (max-width: 480px) {
-    .btn-outline { margin-left: 0; margin-top: 12px; }
-    .hero .btns { display: flex; flex-direction: column; align-items: center; }
-  }
-
-  /* Sections */
-  section { padding: 80px 0; }
-  section h2 {
-    font-size: 1.8rem;
-    margin-bottom: 48px;
-    text-align: center;
-  }
-
-  /* Features */
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
-  }
-  .feature-card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 28px;
-    transition: transform .2s;
-  }
-  .feature-card:hover { transform: translateY(-4px); }
-  .feature-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
-  .feature-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
-  .feature-card p { color: var(--text-dim); font-size: 0.9rem; }
-
-  /* Tech stack */
-  .tech-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
-  }
-  .tech-item {
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .tech-item .label { color: var(--text-dim); font-size: 0.85rem; }
-  .tech-item .value { font-weight: 600; }
-
-  /* Footer */
-  footer {
-    text-align: center;
-    padding: 40px 0;
-    color: var(--text-dim);
-    font-size: 0.85rem;
-    border-top: 1px solid #45475a;
-  }
-  footer a { color: var(--primary); text-decoration: none; }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<section class="hero">
-  <span class="badge">v0.6.4 &middot; AGPL-3.0</span>
-  <h1>JP Media Viewer</h1>
-  <p>简洁的 Android 随机媒体浏览器。无需权限，通过 SAF 添加文件夹，自动扫描图片和视频，支持随机浏览、手势切换、收藏列表。</p>
-  <div class="btns">
-    <a class="btn" href="https://github.com/NoNameLeGo/jp-media-viewer/releases" target="_blank">下载 APK</a>
-    <a class="btn btn-outline" href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank">GitHub</a>
+<!-- Marquee -->
+<div class="marquee-container">
+  <div class="marquee-content">
+    <span>NO PERMISSIONS REQUIRED</span>
+    <span>•</span>
+    <span>ANDROID 6+</span>
+    <span>•</span>
+    <span>AGPL-3.0</span>
+    <span>•</span>
+    <span>SAF-BASED FILE ACCESS</span>
+    <span>•</span>
+    <span>RANDOM BROWSING</span>
+    <span>•</span>
+    <span>MATERIAL YOU</span>
+    <span>•</span>
+    <span>NO PERMISSIONS REQUIRED</span>
+    <span>•</span>
+    <span>ANDROID 6+</span>
+    <span>•</span>
+    <span>AGPL-3.0</span>
+    <span>•</span>
+    <span>SAF-BASED FILE ACCESS</span>
+    <span>•</span>
+    <span>RANDOM BROWSING</span>
+    <span>•</span>
+    <span>MATERIAL YOU</span>
+    <span>•</span>
   </div>
-</section>
-
-<div class="container">
-
-<section>
-  <h2>功能特性</h2>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="icon">📂</div>
-      <h3>文件夹选择</h3>
-      <p>通过 SAF 添加图片/视频文件夹，无需存储权限。</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">🔀</div>
-      <h3>随机浏览</h3>
-      <p>每次浏览随机排序，上滑下一张，下滑上一张。</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">❤️</div>
-      <h3>收藏管理</h3>
-      <p>收藏你喜欢的媒体，支持收藏列表和仅浏览收藏模式。</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">⚡</div>
-      <h3>媒体缓存</h3>
-      <p>扫描结果自动缓存，下次打开无需重复扫描。</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">🎨</div>
-      <h3>Material You</h3>
-      <p>Android 12+ 支持 Monet 动态取色，低版本保持兼容。</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">🔄</div>
-      <h3>暂停/续扫</h3>
-      <p>扫描过程中可暂停，进度保存，随时从断点恢复。</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">🔍</div>
-      <h3>缩放平移</h3>
-      <p>图片支持双指缩放，放大后可拖动查看细节。</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">📁</div>
-      <h3>子文件夹模式</h3>
-      <p>切换到当前媒体所在子文件夹浏览，支持排序。</p>
-    </div>
-  </div>
-</section>
-
-<section>
-  <h2>技术栈</h2>
-  <div class="tech-grid">
-    <div class="tech-item"><span class="label">UI</span><span class="value">Jetpack Compose + Material3</span></div>
-    <div class="tech-item"><span class="label">图片</span><span class="value">Coil 2.5</span></div>
-    <div class="tech-item"><span class="label">视频</span><span class="value">Media3 / ExoPlayer 1.2</span></div>
-    <div class="tech-item"><span class="label">文件访问</span><span class="value">SAF</span></div>
-    <div class="tech-item"><span class="label">语言</span><span class="value">Kotlin</span></div>
-    <div class="tech-item"><span class="label">构建</span><span class="value">Gradle + Kotlin DSL</span></div>
-  </div>
-</section>
-
-<section>
-  <h2>许可证</h2>
-  <p style="text-align:center;color:var(--text-dim)">
-    本项目使用 <a href="https://github.com/NoNameLeGo/jp-media-viewer/blob/main/LICENSE" style="color:var(--primary)">GNU Affero General Public License v3.0</a> 发布。
-  </p>
-</section>
-
 </div>
 
-<footer>
+<!-- WebGL Canvas -->
+<canvas id="webgl-bg"></canvas>
+
+<!-- CRT Scanlines -->
+<div class="scanlines"></div>
+
+<!-- Custom Cursor -->
+<div class="cursor-dot"></div>
+<div class="cursor-outline"></div>
+
+<!-- Mouse Trail -->
+<div class="trail" data-trail="0"></div>
+<div class="trail" data-trail="1"></div>
+<div class="trail" data-trail="2"></div>
+<div class="trail" data-trail="3"></div>
+<div class="trail" data-trail="4"></div>
+<div class="trail" data-trail="5"></div>
+<div class="trail" data-trail="6"></div>
+<div class="trail" data-trail="7"></div>
+<div class="trail" data-trail="8"></div>
+<div class="trail" data-trail="9"></div>
+<div class="trail" data-trail="10"></div>
+<div class="trail" data-trail="11"></div>
+
+<!-- Navigation -->
+<nav class="navbar" id="navbar">
+  <div class="nav-container">
+    <a href="#" class="nav-logo">
+      <span class="logo-icon">JP</span>
+      <span class="logo-text">Media Viewer</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-link" data-magnetic>Features</a>
+      <a href="#techstack" class="nav-link" data-magnetic>Tech Stack</a>
+      <a href="#download" class="nav-link" data-magnetic>Download</a>
+      <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="nav-link nav-github" data-magnetic>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+      </a>
+    </div>
+    <button class="nav-toggle" id="navToggle">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero" id="hero">
+  <div class="hero-container">
+    <div class="hero-left">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span class="badge-version" id="badgeVersion">加载中...</span>
+      </div>
+      <h1 class="hero-title">
+        <span class="glitch" data-text="JP Media Viewer">JP Media Viewer</span>
+      </h1>
+      <p class="hero-subtitle">简洁的 Android 随机媒体浏览器。无需权限，通过 SAF 添加文件夹，自动扫描图片和视频，支持随机浏览、手势切换、收藏列表。</p>
+      <div class="hero-buttons">
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer/releases" target="_blank" class="btn btn-primary" data-magnetic>
+          <span class="btn-glitch"></span>
+          <span class="btn-text">下载 APK</span>
+          <span class="btn-shine"></span>
+        </a>
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="btn btn-outline" data-magnetic>
+          <span class="btn-text">GitHub</span>
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-number" data-count="6">0</span>
+          <span class="stat-label">Features</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" data-count="0">0</span>
+          <span class="stat-label">Permissions</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" data-count="100">0</span>
+          <span class="stat-label">% Open Source</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="terminal-window" data-terminal>
+        <div class="terminal-header">
+          <span class="terminal-dot terminal-red"></span>
+          <span class="terminal-dot terminal-yellow"></span>
+          <span class="terminal-dot terminal-green"></span>
+          <span class="terminal-title">media-viewer</span>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-line" data-delay="0">
+            <span class="terminal-prompt">$</span> <span class="terminal-command">jp-media-viewer --init</span>
+          </div>
+          <div class="terminal-line" data-delay="200">
+            <span class="terminal-success">✓</span> SAF file access ready
+          </div>
+          <div class="terminal-line" data-delay="400">
+            <span class="terminal-success">✓</span> Permissions: NONE
+          </div>
+          <div class="terminal-line" data-delay="600">
+            <span class="terminal-success">✓</span> Material You: enabled
+          </div>
+          <div class="terminal-line" data-delay="800">
+            <span class="terminal-info">ℹ</span> Random browsing mode active
+          </div>
+          <div class="terminal-line" data-delay="1000">
+            <span class="terminal-success">✓</span> Cache system loaded
+          </div>
+          <div class="terminal-line" data-delay="1200">
+            <span class="terminal-prompt">$</span> <span class="cursor-blink">_</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section" id="features">
   <div class="container">
-    <p><a href="https://github.com/NoNameLeGo/jp-media-viewer">jp-media-viewer</a> &middot; 由 AI 辅助开发 &middot; <a href="https://github.com/NoNameLeGo/jp-media-viewer/issues">反馈问题</a></p>
+    <h2 class="section-title">
+      <span class="glitch" data-text="功能特性">功能特性</span>
+    </h2>
+    <div class="features-grid">
+      <div class="holo-card" data-tilt>
+        <div class="holo-card-glow"></div>
+        <div class="holo-card-border"></div>
+        <div class="card-content">
+          <div class="card-icon">📂</div>
+          <h3>文件夹选择</h3>
+          <p>通过 SAF 添加图片/视频文件夹，无需存储权限。</p>
+        </div>
+      </div>
+      <div class="holo-card" data-tilt>
+        <div class="holo-card-glow"></div>
+        <div class="holo-card-border"></div>
+        <div class="card-content">
+          <div class="card-icon">🔀</div>
+          <h3>随机浏览</h3>
+          <p>每次浏览随机排序，上滑下一张，下滑上一张。</p>
+        </div>
+      </div>
+      <div class="holo-card" data-tilt>
+        <div class="holo-card-glow"></div>
+        <div class="holo-card-border"></div>
+        <div class="card-content">
+          <div class="card-icon">❤️</div>
+          <h3>收藏管理</h3>
+          <p>收藏你喜欢的媒体，支持收藏列表和仅浏览收藏模式。</p>
+        </div>
+      </div>
+      <div class="holo-card" data-tilt>
+        <div class="holo-card-glow"></div>
+        <div class="holo-card-border"></div>
+        <div class="card-content">
+          <div class="card-icon">⚡</div>
+          <h3>媒体缓存</h3>
+          <p>扫描结果自动缓存，下次打开无需重复扫描。</p>
+        </div>
+      </div>
+      <div class="holo-card" data-tilt>
+        <div class="holo-card-glow"></div>
+        <div class="holo-card-border"></div>
+        <div class="card-content">
+          <div class="card-icon">🎨</div>
+          <h3>Material You</h3>
+          <p>Android 12+ 支持 Monet 动态取色，低版本保持兼容。</p>
+        </div>
+      </div>
+      <div class="holo-card" data-tilt>
+        <div class="holo-card-glow"></div>
+        <div class="holo-card-border"></div>
+        <div class="card-content">
+          <div class="card-icon">🔄</div>
+          <h3>暂停/续扫</h3>
+          <p>扫描过程中可暂停，进度保存，随时从断点恢复。</p>
+        </div>
+      </div>
+      <div class="holo-card" data-tilt>
+        <div class="holo-card-glow"></div>
+        <div class="holo-card-border"></div>
+        <div class="card-content">
+          <div class="card-icon">🔍</div>
+          <h3>缩放平移</h3>
+          <p>图片支持双指缩放，放大后可拖动查看细节。</p>
+        </div>
+      </div>
+      <div class="holo-card" data-tilt>
+        <div class="holo-card-glow"></div>
+        <div class="holo-card-border"></div>
+        <div class="card-content">
+          <div class="card-icon">📁</div>
+          <h3>子文件夹模式</h3>
+          <p>切换到当前媒体所在子文件夹浏览，支持排序。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Start Timeline -->
+<section class="timeline-section" id="timeline">
+  <div class="container">
+    <h2 class="section-title">
+      <span class="glitch" data-text="快速开始">快速开始</span>
+    </h2>
+    <div class="timeline">
+      <div class="timeline-item" data-step="1">
+        <div class="timeline-marker">
+          <span class="marker-number">1</span>
+        </div>
+        <div class="timeline-content">
+          <h3>下载 APK</h3>
+          <p>从 GitHub Releases 页面下载最新版本的 APK 文件。</p>
+        </div>
+      </div>
+      <div class="timeline-item" data-step="2">
+        <div class="timeline-marker">
+          <span class="marker-number">2</span>
+        </div>
+        <div class="timeline-content">
+          <h3>安装并打开</h3>
+          <p>安装 APK，打开应用。无需授予任何权限。</p>
+        </div>
+      </div>
+      <div class="timeline-item" data-step="3">
+        <div class="timeline-marker">
+          <span class="marker-number">3</span>
+        </div>
+        <div class="timeline-content">
+          <h3>选择文件夹</h3>
+          <p>通过 Android SAF 选择包含图片或视频的文件夹。</p>
+        </div>
+      </div>
+      <div class="timeline-item" data-step="4">
+        <div class="timeline-marker">
+          <span class="marker-number">4</span>
+        </div>
+        <div class="timeline-content">
+          <h3>开始浏览</h3>
+          <p>媒体自动扫描并开始随机浏览，上滑/下滑切换。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack Section -->
+<section class="tech-section" id="techstack">
+  <div class="container">
+    <h2 class="section-title">
+      <span class="glitch" data-text="技术栈">技术栈</span>
+    </h2>
+    <div class="tech-grid">
+      <div class="tech-item" data-tilt>
+        <span class="tech-label">UI</span>
+        <span class="tech-value">Jetpack Compose + Material3</span>
+      </div>
+      <div class="tech-item" data-tilt>
+        <span class="tech-label">图片</span>
+        <span class="tech-value">Coil 2.5</span>
+      </div>
+      <div class="tech-item" data-tilt>
+        <span class="tech-label">视频</span>
+        <span class="tech-value">Media3 / ExoPlayer 1.2</span>
+      </div>
+      <div class="tech-item" data-tilt>
+        <span class="tech-label">文件访问</span>
+        <span class="tech-value">SAF</span>
+      </div>
+      <div class="tech-item" data-tilt>
+        <span class="tech-label">语言</span>
+        <span class="tech-value">Kotlin</span>
+      </div>
+      <div class="tech-item" data-tilt>
+        <span class="tech-label">构建</span>
+        <span class="tech-value">Gradle + Kotlin DSL</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section" id="download">
+  <div class="container">
+    <div class="cta-content">
+      <h2 class="cta-title">
+        <span class="glitch" data-text="立即体验">立即体验</span>
+      </h2>
+      <p class="cta-subtitle">开源、免费、零权限。开始你的随机媒体浏览之旅。</p>
+      <div class="cta-buttons">
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer/releases" target="_blank" class="btn btn-primary btn-large" data-magnetic>
+          <span class="btn-glitch"></span>
+          <span class="btn-text">下载 APK</span>
+          <span class="btn-shine"></span>
+        </a>
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank" class="btn btn-outline btn-large" data-magnetic>
+          <span class="btn-text">Star on GitHub</span>
+        </a>
+      </div>
+      <div class="cta-pulse">
+        <span class="pulse-ring"></span>
+        <span class="pulse-ring"></span>
+        <span class="pulse-ring"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer" target="_blank">GitHub</a>
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer/blob/main/LICENSE" target="_blank">AGPL-3.0</a>
+        <a href="https://github.com/NoNameLeGo/jp-media-viewer/issues" target="_blank">Issues</a>
+      </div>
+      <p class="copyright">
+        jp-media-viewer &middot; 由 AI 辅助开发
+      </p>
+    </div>
   </div>
 </footer>
 
+<script src="script.js"></script>
 </body>
 </html>
