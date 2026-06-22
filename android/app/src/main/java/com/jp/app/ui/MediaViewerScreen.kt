@@ -111,8 +111,8 @@ fun MediaViewerScreen(
     var videoPlayerRef by remember { mutableStateOf<Player?>(null) }
     var isVideoPlaying by remember { mutableStateOf(false) }
 
-    LaunchedEffect(videoPlayerRef) {
-        val p = videoPlayerRef ?: return@LaunchedEffect
+    DisposableEffect(videoPlayerRef) {
+        val p = videoPlayerRef ?: return@DisposableEffect
         val stateListener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 isVideoPlaying = p.isPlaying
