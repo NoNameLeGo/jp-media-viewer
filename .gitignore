@@ -11,6 +11,9 @@ local.properties
 captures
 .externalNativeBuild
 .cxx
-*.log
 .codegraph/
 .reasonix/
+.opencode/
+*.log
+*.logfmt
+jp-media-viewer/

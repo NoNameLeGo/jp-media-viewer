@@ -46,7 +46,7 @@ import java.util.Locale
 private const val PREF_SUBFOLDER_SORT_MODE = "subfolder_sort_mode"
 private const val PREF_SUBFOLDER_SORT_DESCENDING = "subfolder_sort_descending"
 
-private enum class SubfolderSortMode(val prefValue: String, val label: String) {
+public enum class SubfolderSortMode(val prefValue: String, val label: String) {
     FileName("file_name", "文件名"),
     FileSize("file_size", "文件大小"),
     Random("random", "随机");
@@ -593,5 +593,4 @@ private fun MainApp(prefs: SharedPreferences, context: Context) {
             }
         )
     }
-}
 }

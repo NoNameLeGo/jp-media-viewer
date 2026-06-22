@@ -15,10 +15,10 @@ private const val PREF_MEDIA_CACHE_SCANNED = "media_cache_scanned"
 private const val PREF_MEDIA_CACHE_COMPLETE = "media_cache_complete"
 private const val PREF_MEDIA_CACHE_ITEMS = "media_cache_items"
 const val MEDIA_CACHE_FILE_NAME = "media_scan_cache.json"
-private const val PARTIAL_CACHE_MIN_ITEM_DELTA = 1_000
-private const val PARTIAL_CACHE_MIN_INTERVAL_MS = 10_000L
+const val PARTIAL_CACHE_MIN_ITEM_DELTA = 1_000
+const val PARTIAL_CACHE_MIN_INTERVAL_MS = 10_000L
 
-private data class CachedMediaScan(
+public data class CachedMediaScan(
     val items: List<MediaItem>,
     val scanned: Int,
     val complete: Boolean
