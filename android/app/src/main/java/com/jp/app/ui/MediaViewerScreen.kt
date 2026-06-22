@@ -106,6 +106,7 @@ fun MediaViewerScreen(
     val isImageZoomed = item.isImage && imageScale.value > 1.01f
     var videoPlayerRef by remember { mutableStateOf<Player?>(null) }
     var isVideoPlaying by remember { mutableStateOf(false) }
+    var isVideoMuted by remember { mutableStateOf(false) }
 
     DisposableEffect(videoPlayerRef) {
         val p = videoPlayerRef
@@ -201,7 +202,8 @@ fun MediaViewerScreen(
                     modifier = Modifier.fillMaxSize(),
                     playVideo = false,
                     onLoadError = {},
-                    onImageSizeChanged = {}
+                    onImageSizeChanged = {},
+                    isMuted = isVideoMuted
                 )
             }
         }
@@ -229,7 +231,8 @@ fun MediaViewerScreen(
                 playVideo = true,
                 onLoadError = onMediaLoadError,
                 onImageSizeChanged = { imageLoadSize = it },
-                onPlayerReady = { videoPlayerRef = it }
+                onPlayerReady = { videoPlayerRef = it },
+                isMuted = isVideoMuted
             )
         }
 
@@ -452,6 +455,18 @@ fun MediaViewerScreen(
                             tint = Color.White.copy(alpha = 0.7f),
                             modifier = Modifier.size(14.dp)
                         )
+                        Spacer(Modifier.width(8.dp))
+                        IconButton(
+                            onClick = { isVideoMuted = !isVideoMuted },
+                            modifier = Modifier.size(18.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VolumeUp,
+                                contentDescription = if (isVideoMuted) "取消静音" else "静音",
+                                tint = if (isVideoMuted) Color.White.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -488,12 +503,13 @@ private fun MediaSurface(
     playVideo: Boolean,
     onLoadError: () -> Unit,
     onImageSizeChanged: (IntSize) -> Unit = {},
-    onPlayerReady: (Player) -> Unit = {}
+    onPlayerReady: (Player) -> Unit = {},
+    isMuted: Boolean = false
 ) {
     val context = LocalContext.current
 
     if (item.isVideo && playVideo) {
-        VideoPlayer(uri = item.uri, modifier = modifier, onLoadError = onLoadError, onPlayerReady = onPlayerReady)
+        VideoPlayer(uri = item.uri, modifier = modifier, onLoadError = onLoadError, onPlayerReady = onPlayerReady, isMuted = isMuted)
     } else {
         SubcomposeAsyncImage(
             model = ImageRequest.Builder(context)

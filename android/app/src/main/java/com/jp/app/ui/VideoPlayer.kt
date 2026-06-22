@@ -3,7 +3,6 @@ package com.jp.app.ui
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.RememberObserver
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,7 +22,8 @@ fun VideoPlayer(
     uri: Uri,
     modifier: Modifier = Modifier,
     onLoadError: () -> Unit,
-    onPlayerReady: (Player) -> Unit = {}
+    onPlayerReady: (Player) -> Unit = {},
+    isMuted: Boolean = false
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val currentOnLoadError by androidx.compose.runtime.derivedStateOf { onLoadError }
@@ -38,6 +38,11 @@ fun VideoPlayer(
 
     androidx.compose.runtime.LaunchedEffect(player) {
         currentOnPlayerReady(player)
+    }
+
+    // Apply mute state when it changes
+    LaunchedEffect(player, isMuted) {
+        player.volume = if (isMuted) 0f else 1f
     }
 
     // Swap media item when URI changes (no player recreation)
