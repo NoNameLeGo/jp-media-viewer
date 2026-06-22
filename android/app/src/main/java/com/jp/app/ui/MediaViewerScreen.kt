@@ -47,6 +47,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem as ExoMediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
@@ -107,18 +113,15 @@ fun MediaViewerScreen(
 
     DisposableEffect(videoPlayerRef) {
         val p = videoPlayerRef
-        val stateListener = if (p != null) {
-            object : Player.Listener {
+        if (p != null) {
+            val stateListener = object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     isVideoPlaying = p.isPlaying
                 }
-            }.also { p.addListener(it) }
-        } else null
-
-        onDispose {
-            stateListener?.let { p?.removeListener(it) }
+            }
+            p.addListener(stateListener)
+            onDispose { p.removeListener(stateListener) }
         }
-        DisposableEffectResult { }
     }
     val targetZoomScale = when {
         imageScale.value >= 2.40f -> 4f
@@ -298,8 +301,113 @@ fun MediaViewerScreen(
                             scope.launch {
                                 imageScale.snapTo(1f)
                             }
-                        }
-                    }
+    }
+}
+
+private fun deepestFolderName(folderUri: Uri): String {
+    val segment = folderUri.lastPathSegment?.takeIf { it.isNotBlank() }
+        ?: return folderUri.toString()
+    return segment.substringAfterLast('/').substringAfterLast(':').takeIf { it.isNotBlank() }
+        ?: segment
+}
+
+private fun formatFileSize(bytes: Long): String {
+    if (bytes < 0) return "未知"
+
+    val units = listOf("B", "KB", "MB", "GB")
+    var size = bytes.toDouble()
+    var unitIndex = 0
+    while (size >= 1024 && unitIndex < units.lastIndex) {
+        size /= 1024
+        unitIndex++
+    }
+
+    return if (unitIndex == 0) {
+        "${bytes} ${units[unitIndex]}"
+    } else {
+        "%.1f %s".format(size, units[unitIndex])
+    }
+}
+
+private val detailDateFormatter: DateTimeFormatter = DateTimeFormatter
+    .ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
+    .withZone(ZoneId.systemDefault())
+
+private fun formatModifiedDate(modifiedAt: Long): String {
+    if (modifiedAt <= 0L) return "未知"
+    return detailDateFormatter.format(Instant.ofEpochMilli(modifiedAt))
+}
+
+@Composable
+fun VideoPlayer(
+    uri: Uri,
+    modifier: Modifier = Modifier,
+    onLoadError: () -> Unit,
+    onPlayerReady: (Player) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val currentOnLoadError by rememberUpdatedState(onLoadError)
+    val currentOnPlayerReady by rememberUpdatedState(onPlayerReady)
+
+    // Single ExoPlayer instance reused across URI changes
+    val player = remember {
+        ExoPlayer.Builder(context).build().apply {
+            repeatMode = Player.REPEAT_MODE_ALL
+        }
+    }
+
+    LaunchedEffect(player) {
+        currentOnPlayerReady(player)
+    }
+
+    // Swap media item when URI changes (no player recreation)
+    LaunchedEffect(uri) {
+        player.stop()
+        player.setMediaItem(ExoMediaItem.fromUri(uri))
+        player.prepare()
+        player.playWhenReady = true
+    }
+
+    // Lifecycle: pause on background, release on dispose
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> player.pause()
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    if (player.playbackState != Player.STATE_IDLE) player.play()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = object : Player.Listener {
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                currentOnLoadError()
+            }
+        }
+        player.addListener(listener)
+        onDispose {
+            player.removeListener(listener)
+            player.release()
+        }
+    }
+
+    AndroidView(
+        factory = { ctx ->
+            PlayerView(ctx).apply {
+                this.player = player
+                useController = true
+                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+            }
+        },
+        modifier = modifier
+    )
+}
                 }
                 .pointerInput(isImageZoomed) {
                     var totalDy = 0f
