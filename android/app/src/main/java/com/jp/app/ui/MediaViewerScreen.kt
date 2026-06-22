@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Mute
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
@@ -111,16 +110,12 @@ fun MediaViewerScreen(
     val isImageZoomed = item.isImage && imageScale.value > 1.01f
     var videoPlayerRef by remember { mutableStateOf<Player?>(null) }
     var isVideoPlaying by remember { mutableStateOf(false) }
-    var isVideoMuted by remember { mutableStateOf(false) }
 
     LaunchedEffect(videoPlayerRef) {
         val p = videoPlayerRef ?: return@LaunchedEffect
         val stateListener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 isVideoPlaying = p.isPlaying
-            }
-            override fun onIsMutedChanged(muted: Boolean) {
-                isVideoMuted = muted
             }
         }
         p.addListener(stateListener)
@@ -453,13 +448,6 @@ fun MediaViewerScreen(
                         Icon(
                             imageVector = if (isVideoPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = if (isVideoPlaying) "暂停" else "播放",
-                            tint = Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Icon(
-                            imageVector = if (isVideoMuted) Icons.Default.Mute else Icons.Default.VolumeUp,
-                            contentDescription = if (isVideoMuted) "静音" else "有声",
                             tint = Color.White.copy(alpha = 0.7f),
                             modifier = Modifier.size(14.dp)
                         )
