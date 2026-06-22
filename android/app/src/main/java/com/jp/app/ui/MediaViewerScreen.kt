@@ -22,6 +22,10 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Mute
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -105,6 +109,23 @@ fun MediaViewerScreen(
     var imageLoadSize by remember(item.uri) { mutableStateOf(IntSize.Zero) }
     var settledZoomScale by remember(item.uri) { mutableStateOf(1f) }
     val isImageZoomed = item.isImage && imageScale.value > 1.01f
+    var videoPlayerRef by remember { mutableStateOf<Player?>(null) }
+    var isVideoPlaying by remember { mutableStateOf(false) }
+    var isVideoMuted by remember { mutableStateOf(false) }
+
+    LaunchedEffect(videoPlayerRef) {
+        val p = videoPlayerRef ?: return@LaunchedEffect
+        val stateListener = object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                isVideoPlaying = p.isPlaying
+            }
+            override fun onIsMutedChanged(muted: Boolean) {
+                isVideoMuted = muted
+            }
+        }
+        p.addListener(stateListener)
+        onDispose { p.removeListener(stateListener) }
+    }
     val targetZoomScale = when {
         imageScale.value >= 2.40f -> 4f
         imageScale.value >= 1.60f -> 2f
@@ -212,7 +233,8 @@ fun MediaViewerScreen(
                     },
                 playVideo = true,
                 onLoadError = onMediaLoadError,
-                onImageSizeChanged = { imageLoadSize = it }
+                onImageSizeChanged = { imageLoadSize = it },
+                onPlayerReady = { videoPlayerRef = it }
             )
         }
 
@@ -425,6 +447,24 @@ fun MediaViewerScreen(
                         Toast.makeText(context, "已复制文件夹名称", Toast.LENGTH_SHORT).show()
                     }
                 )
+                if (item.isVideo) {
+                    Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (isVideoPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (isVideoPlaying) "暂停" else "播放",
+                            tint = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = if (isVideoMuted) Icons.Default.Mute else Icons.Default.VolumeUp,
+                            contentDescription = if (isVideoMuted) "静音" else "有声",
+                            tint = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
             }
         }
 
@@ -458,12 +498,13 @@ private fun MediaSurface(
     modifier: Modifier = Modifier,
     playVideo: Boolean,
     onLoadError: () -> Unit,
-    onImageSizeChanged: (IntSize) -> Unit = {}
+    onImageSizeChanged: (IntSize) -> Unit = {},
+    onPlayerReady: (Player) -> Unit = {}
 ) {
     val context = LocalContext.current
 
     if (item.isVideo && playVideo) {
-        VideoPlayer(uri = item.uri, modifier = modifier, onLoadError = onLoadError)
+        VideoPlayer(uri = item.uri, modifier = modifier, onLoadError = onLoadError, onPlayerReady = onPlayerReady)
     } else {
         SubcomposeAsyncImage(
             model = ImageRequest.Builder(context)
@@ -524,15 +565,25 @@ private fun formatModifiedDate(modifiedAt: Long): String {
 }
 
 @Composable
-fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier, onLoadError: () -> Unit) {
+fun VideoPlayer(
+    uri: Uri,
+    modifier: Modifier = Modifier,
+    onLoadError: () -> Unit,
+    onPlayerReady: (Player) -> Unit = {}
+) {
     val context = LocalContext.current
     val currentOnLoadError by rememberUpdatedState(onLoadError)
+    val currentOnPlayerReady by rememberUpdatedState(onPlayerReady)
 
     // Single ExoPlayer instance reused across URI changes
     val player = remember {
         ExoPlayer.Builder(context).build().apply {
             repeatMode = Player.REPEAT_MODE_ALL
         }
+    }
+
+    LaunchedEffect(player) {
+        currentOnPlayerReady(player)
     }
 
     // Swap media item when URI changes (no player recreation)
@@ -576,7 +627,7 @@ fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier, onLoadError: () -> Unit
         factory = { ctx ->
             PlayerView(ctx).apply {
                 this.player = player
-                useController = false
+                useController = true
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             }
         },

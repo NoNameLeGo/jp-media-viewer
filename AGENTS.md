@@ -3,7 +3,7 @@
 ## Project Overview
 Single-module Android app (Kotlin, Jetpack Compose + Material3) for browsing local images/videos via Storage Access Framework (SAF).
 - **License:** AGPL-3.0-only
-- **Current version:** beta0.7.4 (versionCode 48)
+- **Current version:** beta0.7.5 (versionCode 49)
 - **No ViewModel, no DI, no nav component** — all state lives as `remember { mutableStateOf(...) }` inside `MainApp` composable (`MainActivity.kt:98`). Screen routing is an `if/else` on an `isViewing` boolean.
 - **No media permissions in manifest** — SAF-only file access. No `READ_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, or `READ_MEDIA_VIDEO`.
 - **Material You:** dynamic colors on Android 12+ (`dynamicDarkColorScheme`/`dynamicLightColorScheme`), manual fallback on older versions.
@@ -77,4 +77,47 @@ data class MediaItem(
     val isVideo: Boolean get() = mimeType.startsWith("video/")
     val isImage: Boolean get() = mimeType.startsWith("image/")
 }
+
+## Karpathy Coding Guidelines
+
+基于 Andrej Karpathy 的 LLM 编码陷阱观察的编码行为指南。适用于所有非特定领域任务，确保代码简洁、精准、可验证。
+
+### 1. Think Before Coding
+
+**不要假设。不要隐藏困惑。呈现权衡。**
+
+在实现之前：
+- 明确陈述你的假设。如果不确定，直接问。
+- 如果存在多个解释，呈现它们——不要默默选择一个。
+- 如果存在更简单的方法，指出它。在合理时提出反对意见。
+- 如果某些事情不清楚，停下来。说出什么让你困惑。询问。
+
+### 2. Simplicity First
+
+**最小代码解决问题。没有投机性代码。**
+
+- 不要添加用户没要求的功能。
+- 不要为单次使用创建抽象。
+- 不要添加用户没要求的"灵活性"或"可配置性"。
+- 不要为不可能的场景添加错误处理。
+- 如果你写了 200 行但可以是 50 行，重写它。
+
+### 3. Surgical Changes
+
+**只碰必须碰的。只清理你自己的烂摊子。**
+
+- 不要"改进"相邻的代码、注释或格式。
+- 不要重构没坏的东西。
+- 匹配现有风格，即使你可能会用不同方式写。
+- 如果你注意到无关的死代码，指出它——不要删除它。
+
+### 4. Goal-Driven Execution
+
+**定义成功标准。循环直到验证。**
+
+- "添加验证" → "为无效输入写测试，然后让它们通过"
+- "修复 bug" → "写一个复现它的测试，然后让它通过"
+- "重构 X" → "确保测试在重构前后都通过"
+
+---
 ```
