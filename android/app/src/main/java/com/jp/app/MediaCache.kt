@@ -106,17 +106,6 @@ fun calculateMediaCacheSizeBytes(context: Context, prefs: SharedPreferences): Lo
         (prefs.getString(PREF_MEDIA_CACHE_FOLDERS, null)?.length ?: 0).toLong()
 }
 
-fun shouldSavePartialCache(
-    currentItemCount: Int,
-    lastSavedItemCount: Int,
-    lastSavedAt: Long,
-    now: Long
-): Boolean {
-    val itemDelta = currentItemCount - lastSavedItemCount
-    return itemDelta > 0 &&
-        (itemDelta >= PARTIAL_CACHE_MIN_ITEM_DELTA || now - lastSavedAt >= PARTIAL_CACHE_MIN_INTERVAL_MS)
-}
-
 private fun readMediaItems(reader: JsonReader): List<MediaItem> {
     return buildList {
         reader.beginArray()

@@ -40,6 +40,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -85,4 +89,7 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.2.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.11.1")
 }

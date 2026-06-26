@@ -1,0 +1,153 @@
+[
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/5A2382EA8F29508086EACCFE24CCB713",
+    "id": "5A2382EA8F29508086EACCFE24CCB713",
+    "title": "Offscreen",
+    "type": "background_page",
+    "url": "chrome-extension://liilgpjgabokdklappibcjfablkpcekh/src/offscreen.html",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/5A2382EA8F29508086EACCFE24CCB713"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/969ACECECD91AE3FA84FF5995AC3E936",
+    "id": "969ACECECD91AE3FA84FF5995AC3E936",
+    "parentId": "5A2382EA8F29508086EACCFE24CCB713",
+    "title": "chrome-extension://liilgpjgabokdklappibcjfablkpcekh/src/sandbox.html",
+    "type": "iframe",
+    "url": "chrome-extension://liilgpjgabokdklappibcjfablkpcekh/src/sandbox.html",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/969ACECECD91AE3FA84FF5995AC3E936"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/C57632AE9B2CCA370E6FC3ABFC98F64E",
+    "faviconUrl": "https://mooc1.chaoxing.com/favicon.ico",
+    "id": "C57632AE9B2CCA370E6FC3ABFC98F64E",
+    "title": "学生学习页面",
+    "type": "page",
+    "url": "https://mooc1.chaoxing.com/mycourse/studentstudy?chapterId=1176809067&courseId=261881611&clazzid=146977192&cpi=487986213&enc=e6444619ea542d542461189cbee67fed&mooc2=1&hidetype=0&openc=405bb6324c36f723f77aecf322d7138b",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/C57632AE9B2CCA370E6FC3ABFC98F64E"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/37B77EF5934C0C7F32408DC27F816050",
+    "id": "37B77EF5934C0C7F32408DC27F816050",
+    "title": "AdGuard 广告拦截器",
+    "type": "background_page",
+    "url": "chrome-extension://pdffkfellgipmhklpdmokmckkkfcopbh/pages/background.html",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/37B77EF5934C0C7F32408DC27F816050"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/80472165AE74BC15FB7FDAE8DE3414B4",
+    "id": "80472165AE74BC15FB7FDAE8DE3414B4",
+    "title": "uBlock Origin",
+    "type": "background_page",
+    "url": "chrome-extension://odfafepnkmbhccpbejgmiehpchacaeak/background.html",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/80472165AE74BC15FB7FDAE8DE3414B4"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/BA435D0B60192523DD7EF8F27606BFDF",
+    "id": "BA435D0B60192523DD7EF8F27606BFDF",
+    "title": "AdBlock - 拦截整个网络的广告",
+    "type": "background_page",
+    "url": "chrome-extension://ndcileolkflehcjpmjnfbnaibdcgglog/_generated_background_page.html",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/BA435D0B60192523DD7EF8F27606BFDF"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/25540529D11237EA3786F9550A6F5DE2",
+    "id": "25540529D11237EA3786F9550A6F5DE2",
+    "title": "Dark Reader",
+    "type": "background_page",
+    "url": "chrome-extension://ifoakfbpdcdoeenechcleahebpibofpc/background/index.html",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/25540529D11237EA3786F9550A6F5DE2"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/D85BB2FD8E3094B694DF5E8757BB71A8",
+    "id": "D85BB2FD8E3094B694DF5E8757BB71A8",
+    "title": "扩展管理器（Extension Manager）",
+    "type": "background_page",
+    "url": "chrome-extension://bhahgfgngfghgjhnpplmemebhenieijb/background.html",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/D85BB2FD8E3094B694DF5E8757BB71A8"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/FB9D7C540F289F2B585CF08BF013E178",
+    "faviconUrl": "https://i0.hdslb.com/bfs/static/jinkela/long/images/favicon.ico",
+    "id": "FB9D7C540F289F2B585CF08BF013E178",
+    "parentId": "CE56A43537F9578E10C9C61DBFA290FC",
+    "title": "https://s1.hdslb.com/bfs/seed/jinkela/short/cols/iframe.html",
+    "type": "iframe",
+    "url": "https://s1.hdslb.com/bfs/seed/jinkela/short/cols/iframe.html",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/FB9D7C540F289F2B585CF08BF013E178"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/D7FA615673E92360B28BBC01D5EC5149",
+    "faviconUrl": "https://i0.hdslb.com/bfs/static/jinkela/long/images/favicon.ico",
+    "id": "D7FA615673E92360B28BBC01D5EC5149",
+    "parentId": "CE56A43537F9578E10C9C61DBFA290FC",
+    "title": "https://s1.hdslb.com/bfs/seed/jinkela/short/leader-election/iframe.html?leaderID=watchlaterpipwindow",
+    "type": "iframe",
+    "url": "https://s1.hdslb.com/bfs/seed/jinkela/short/leader-election/iframe.html?leaderID=watchlaterpipwindow",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/D7FA615673E92360B28BBC01D5EC5149"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/inspector.html?ws=localhost:9222/devtools/page/CE56A43537F9578E10C9C61DBFA290FC",
+    "faviconUrl": "https://i0.hdslb.com/bfs/static/jinkela/long/images/favicon.ico",
+    "id": "CE56A43537F9578E10C9C61DBFA290FC",
+    "title": "😵‍💫街霸6更新计划加剧新老玩家对立，卡普空到底想做什么？ 【秃头快谈13】-无名乐高-稍后再看-哔哩哔哩视频",
+    "type": "page",
+    "url": "https://www.bilibili.com/list/watchlater?oid=116765514335641&bvid=BV1g5LR6jErg",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/CE56A43537F9578E10C9C61DBFA290FC"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/worker_app.html?ws=localhost:9222/devtools/page/A6A4775A8CAC003ABDCD845DFA118A74",
+    "id": "A6A4775A8CAC003ABDCD845DFA118A74",
+    "title": "Service Worker chrome-extension://fepjgblalcnepokjblgbgmapmlkgfahc/background.js",
+    "type": "service_worker",
+    "url": "chrome-extension://fepjgblalcnepokjblgbgmapmlkgfahc/background.js",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/A6A4775A8CAC003ABDCD845DFA118A74"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/worker_app.html?ws=localhost:9222/devtools/page/3C1F7AC6FD69888B80D2D7694382C8B7",
+    "id": "3C1F7AC6FD69888B80D2D7694382C8B7",
+    "title": "Service Worker chrome-extension://pciakllldcajllepkbbihkmfkikheffb/pages/background.js",
+    "type": "service_worker",
+    "url": "chrome-extension://pciakllldcajllepkbbihkmfkikheffb/pages/background.js",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/3C1F7AC6FD69888B80D2D7694382C8B7"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/worker_app.html?ws=localhost:9222/devtools/page/613009270FB2FB9C726444CCFB53FF88",
+    "id": "613009270FB2FB9C726444CCFB53FF88",
+    "title": "Service Worker chrome-extension://odphnbhiddhdpoccbialllejaajemdio/scripts/background.js",
+    "type": "service_worker",
+    "url": "chrome-extension://odphnbhiddhdpoccbialllejaajemdio/scripts/background.js",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/613009270FB2FB9C726444CCFB53FF88"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/worker_app.html?ws=localhost:9222/devtools/page/30E5F41F2C76EA24F10CA2D8DDD8DFBE",
+    "id": "30E5F41F2C76EA24F10CA2D8DDD8DFBE",
+    "title": "Service Worker chrome-extension://meleenglfggcmcajknpeeeiobnpfmahc/background.js",
+    "type": "service_worker",
+    "url": "chrome-extension://meleenglfggcmcajknpeeeiobnpfmahc/background.js",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/30E5F41F2C76EA24F10CA2D8DDD8DFBE"
+  },
+  {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@2d040fee770f06340fc6876f881514aaa6295818/worker_app.html?ws=localhost:9222/devtools/page/162460243868470A6C16745D27192B21",
+    "id": "162460243868470A6C16745D27192B21",
+    "title": "Service Worker chrome-extension://capohkkfagimodmlpnahjoijgoocdjhd/static/js/background.js",
+    "type": "service_worker",
+    "url": "chrome-extension://capohkkfagimodmlpnahjoijgoocdjhd/static/js/background.js",
+    "webSocketDebuggerUrl": "ws://localhost:9222/devtools/page/162460243868470A6C16745D27192B21"
+  }
+]
