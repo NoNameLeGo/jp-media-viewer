@@ -197,9 +197,6 @@ class MediaBrowserState(
                     }.onSuccess {
                         lastPartialCacheItemCount = foundItems.size
                         lastPartialCacheSavedAt = now
-                        withContext(Dispatchers.Main) {
-                            mediaCacheSizeBytes = calculateMediaCacheSizeBytes(context, prefs)
-                        }
                     }
                 }
             }
