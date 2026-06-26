@@ -4,6 +4,11 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.SystemClock
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.jp.app.data.MediaItem
 import com.jp.app.data.MediaScanner
 import kotlinx.coroutines.CancellationException
@@ -15,7 +20,7 @@ import kotlinx.coroutines.withContext
 private const val PREF_SUBFOLDER_SORT_MODE = "subfolder_sort_mode"
 private const val PREF_SUBFOLDER_SORT_DESCENDING = "subfolder_sort_descending"
 
-internal enum class SubfolderSortMode(val prefValue: String, val label: String) {
+enum class SubfolderSortMode(val prefValue: String, val label: String) {
     FileName("file_name", "文件名"),
     FileSize("file_size", "文件大小"),
     Random("random", "随机");
