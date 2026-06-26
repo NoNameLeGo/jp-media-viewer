@@ -174,7 +174,12 @@ class MediaScanner(private val context: Context) {
                     )
                 }
             } ?: return null
-        } catch (_: Exception) {
+        } catch (secEx: SecurityException) {
+            // 权限失效 — 调用方会记录为 failedDirs
+            android.util.Log.w("MediaScanner", "权限拒绝: $parentDocId", secEx)
+            return null
+        } catch (error: Exception) {
+            android.util.Log.w("MediaScanner", "读取目录失败: $parentDocId", error)
             return null
         }
         return entries
