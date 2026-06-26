@@ -27,8 +27,8 @@ fun VideoPlayer(
     isMuted: Boolean = false
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val currentOnLoadError by androidx.compose.runtime.derivedStateOf { onLoadError }
-    val currentOnPlayerReady by androidx.compose.runtime.derivedStateOf { onPlayerReady }
+    val currentOnLoadError by androidx.compose.runtime.rememberUpdatedState(onLoadError)
+    val currentOnPlayerReady by androidx.compose.runtime.rememberUpdatedState(onPlayerReady)
 
     // Single ExoPlayer instance reused across URI changes
     val player = remember {
@@ -37,7 +37,7 @@ fun VideoPlayer(
         }
     }
 
-    androidx.compose.runtime.LaunchedEffect(player) {
+    androidx.compose.runtime.LaunchedEffect(Unit) {
         currentOnPlayerReady(player)
     }
 
