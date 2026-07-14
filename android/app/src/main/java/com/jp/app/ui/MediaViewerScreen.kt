@@ -1,5 +1,6 @@
 package com.jp.app.ui
 
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.*
@@ -17,6 +18,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -43,6 +45,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -75,7 +78,10 @@ fun MediaViewerScreen(
     onBack: () -> Unit,
     onSettings: () -> Unit,
     onToggleSubfolderFilter: () -> Unit,
-    onMediaLoadError: () -> Unit
+    onMediaLoadError: () -> Unit,
+    isVideoMuted: Boolean,
+    onToggleMute: () -> Unit,
+    onJumpTo: (Int) -> Unit
 ) {
     if (mediaItems.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
@@ -92,6 +98,7 @@ fun MediaViewerScreen(
     val contentOffsetY = remember { Animatable(0f) }
     var showControls by remember { mutableStateOf(true) }
     var showDetails by remember { mutableStateOf(false) }
+    var showJumpDialog by remember { mutableStateOf(false) }
     var isSwipeAnimating by remember { mutableStateOf(false) }
     val currentOnToggleFavorite by rememberUpdatedState(onToggleFavorite)
     val imageScale = remember(item.uri) { Animatable(1f) }
@@ -106,20 +113,36 @@ fun MediaViewerScreen(
     val isImageZoomed = item.isImage && imageScale.value > 1.01f
     var videoPlayerRef by remember { mutableStateOf<Player?>(null) }
     var isVideoPlaying by remember { mutableStateOf(false) }
-    var isVideoMuted by remember { mutableStateOf(false) }
+    var videoPositionMs by remember(item.uri) { mutableStateOf(0L) }
+    var videoDurationMs by remember(item.uri) { mutableStateOf(0L) }
+    var isSeeking by remember(item.uri) { mutableStateOf(false) }
+    var seekPreviewMs by remember(item.uri) { mutableStateOf(0L) }
 
     DisposableEffect(videoPlayerRef) {
         val p = videoPlayerRef
         if (p != null) {
+            isVideoPlaying = p.isPlaying
             val stateListener = object : Player.Listener {
-                override fun onPlaybackStateChanged(state: Int) {
-                    isVideoPlaying = p.isPlaying
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    isVideoPlaying = isPlaying
                 }
             }
             p.addListener(stateListener)
             onDispose { p.removeListener(stateListener) }
         } else {
             onDispose { }
+        }
+    }
+
+    // Poll playback position while a video is loaded
+    LaunchedEffect(videoPlayerRef, item.uri) {
+        val p = videoPlayerRef ?: return@LaunchedEffect
+        while (true) {
+            if (!isSeeking) {
+                videoPositionMs = p.currentPosition.coerceAtLeast(0L)
+                videoDurationMs = p.duration.takeIf { it > 0L } ?: 0L
+            }
+            kotlinx.coroutines.delay(500)
         }
     }
     val targetZoomScale = when {
@@ -379,7 +402,12 @@ fun MediaViewerScreen(
                 title = {
                     Text(
                         text = "${currentIndex + 1} / ${mediaItems.size}${if (isFavoriteBrowsing) " · 收藏" else if (isFavorite) " · 已收藏" else ""}${if (isSubfolderFiltered) " · 📁 $folderName" else ""}",
-                        color = Color.White
+                        color = Color.White,
+                        modifier = if (mediaItems.size > 1) {
+                            Modifier.clickable { showJumpDialog = true }
+                        } else {
+                            Modifier
+                        }
                     )
                 },
                 navigationIcon = {
@@ -448,23 +476,56 @@ fun MediaViewerScreen(
                 )
                 if (item.isVideo) {
                     Spacer(Modifier.height(4.dp))
+                    val displayPositionMs = if (isSeeking) seekPreviewMs else videoPositionMs
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (isVideoPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (isVideoPlaying) "暂停" else "播放",
-                            tint = Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
                         IconButton(
-                            onClick = { isVideoMuted = !isVideoMuted },
-                            modifier = Modifier.size(18.dp)
+                            onClick = {
+                                videoPlayerRef?.let { if (it.isPlaying) it.pause() else it.play() }
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isVideoPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isVideoPlaying) "暂停" else "播放",
+                                tint = Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Text(
+                            text = formatVideoTime(displayPositionMs),
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Slider(
+                            value = if (videoDurationMs > 0L) {
+                                (displayPositionMs.toFloat() / videoDurationMs).coerceIn(0f, 1f)
+                            } else 0f,
+                            onValueChange = { fraction ->
+                                isSeeking = true
+                                seekPreviewMs = (fraction * videoDurationMs).toLong()
+                            },
+                            onValueChangeFinished = {
+                                videoPlayerRef?.seekTo(seekPreviewMs)
+                                videoPositionMs = seekPreviewMs
+                                isSeeking = false
+                            },
+                            enabled = videoDurationMs > 0L,
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+                        )
+                        Text(
+                            text = formatVideoTime(videoDurationMs),
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        IconButton(
+                            onClick = onToggleMute,
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.VolumeUp,
                                 contentDescription = if (isVideoMuted) "取消静音" else "静音",
                                 tint = if (isVideoMuted) Color.White.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.7f),
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -483,12 +544,71 @@ fun MediaViewerScreen(
                         Text("大小：${formatFileSize(item.size)}")
                         Text("文件夹：$folderName")
                         Text("状态：${if (isFavorite) "已收藏" else "未收藏"}")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = item.mimeType
+                                    putExtra(Intent.EXTRA_STREAM, item.uri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                runCatching {
+                                    context.startActivity(Intent.createChooser(shareIntent, "分享"))
+                                }.onFailure {
+                                    Toast.makeText(context, "没有可用于分享的应用", Toast.LENGTH_SHORT).show()
+                                }
+                            }) { Text("分享") }
+                            TextButton(onClick = {
+                                val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(item.uri, item.mimeType)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                runCatching {
+                                    context.startActivity(Intent.createChooser(viewIntent, "用其他应用打开"))
+                                }.onFailure {
+                                    Toast.makeText(context, "没有可打开该文件的应用", Toast.LENGTH_SHORT).show()
+                                }
+                            }) { Text("用其他应用打开") }
+                        }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = { showDetails = false }) {
                         Text("关闭")
                     }
+                }
+            )
+        }
+
+        if (showJumpDialog) {
+            var jumpInput by remember { mutableStateOf((currentIndex + 1).toString()) }
+            val parsed = jumpInput.toIntOrNull()
+            val isValid = parsed != null && parsed in 1..mediaItems.size
+            AlertDialog(
+                onDismissRequest = { showJumpDialog = false },
+                title = { Text("跳转到") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("共 ${mediaItems.size} 项，输入 1 到 ${mediaItems.size} 的序号")
+                        OutlinedTextField(
+                            value = jumpInput,
+                            onValueChange = { jumpInput = it.filter { c -> c.isDigit() } },
+                            singleLine = true,
+                            isError = jumpInput.isNotEmpty() && !isValid,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = isValid,
+                        onClick = {
+                            onJumpTo(parsed!! - 1)
+                            showJumpDialog = false
+                        }
+                    ) { Text("跳转") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showJumpDialog = false }) { Text("取消") }
                 }
             )
         }
