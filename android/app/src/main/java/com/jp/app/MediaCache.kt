@@ -32,7 +32,7 @@ fun mediaCacheFoldersKey(folders: List<String>): String {
     return folders.sorted().joinToString("\n")
 }
 
-fun loadCachedMediaScan(
+internal fun loadCachedMediaScan(
     context: Context,
     prefs: SharedPreferences,
     folders: List<String>,
