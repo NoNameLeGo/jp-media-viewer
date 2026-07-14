@@ -19,6 +19,11 @@ import kotlinx.coroutines.withContext
 
 private const val PREF_SUBFOLDER_SORT_MODE = "subfolder_sort_mode"
 private const val PREF_SUBFOLDER_SORT_DESCENDING = "subfolder_sort_descending"
+private const val ITEM_BATCH_MIN_INTERVAL_MS = 300L
+
+enum class FavoriteHintAction { StartBrowsing, Rescan }
+
+data class FavoriteHint(val message: String, val action: FavoriteHintAction)
 
 enum class SubfolderSortMode(val prefValue: String, val label: String) {
     FileName("file_name", "文件名"),
@@ -88,6 +93,7 @@ class MediaBrowserState(
     var favoriteUris by mutableStateOf(
         prefs.getStringSet("favorite_uris", emptySet())?.toSet() ?: emptySet()
     )
+    var favoriteHint by mutableStateOf<FavoriteHint?>(null)
 
     // ── Subfolder ───────────────────────────────────────────────
 
@@ -98,6 +104,10 @@ class MediaBrowserState(
     var subfolderSortDescending by mutableStateOf(
         prefs.getBoolean(PREF_SUBFOLDER_SORT_DESCENDING, false)
     )
+
+    // ── Video ───────────────────────────────────────────────────
+
+    var videoMuted by mutableStateOf(prefs.getBoolean("video_muted", false))
 
     // ── Derived ─────────────────────────────────────────────────
 
@@ -172,6 +182,22 @@ class MediaBrowserState(
             var scannedCount = 0
             var lastPartialCacheItemCount = cachedScan?.items?.size ?: 0
             var lastPartialCacheSavedAt = SystemClock.elapsedRealtime()
+            var lastItemDispatchAt = 0L
+            var pendingBatchItems: List<MediaItem> = emptyList()
+
+            suspend fun flushPendingItems(progress: MediaScanner.ScanProgress) {
+                if (pendingBatchItems.isEmpty()) return
+                withContext(Dispatchers.Main) {
+                    scanProgress = progress.copy(foundItems = emptyList())
+                    latestScannedItems = pendingBatchItems
+                    if (!isViewing) {
+                        mediaItems = pendingBatchItems
+                    }
+                }
+                pendingBatchItems = emptyList()
+                lastItemDispatchAt = SystemClock.elapsedRealtime()
+            }
+
             val items = scanner.scan(
                 folderUris = folders,
                 respectNomedia = respectNomedia,
@@ -179,16 +205,19 @@ class MediaBrowserState(
             ) { progress ->
                 scannedCount = progress.scanned
                 val foundItems = progress.foundItems
-                withContext(Dispatchers.Main) {
-                    scanProgress = progress.copy(foundItems = emptyList())
-                    if (foundItems.isNotEmpty()) {
-                        latestScannedItems = foundItems
-                    }
-                    if (!isViewing && foundItems.isNotEmpty()) {
-                        mediaItems = foundItems
-                    }
-                }
                 val now = SystemClock.elapsedRealtime()
+
+                if (foundItems.isNotEmpty()) {
+                    pendingBatchItems = foundItems
+                }
+
+                val shouldDispatch = foundItems.isNotEmpty() &&
+                    (now - lastItemDispatchAt >= ITEM_BATCH_MIN_INTERVAL_MS)
+
+                if (shouldDispatch) {
+                    flushPendingItems(progress)
+                }
+
                 val itemDelta = foundItems.size - lastPartialCacheItemCount
                 val shouldSave = itemDelta > 0 &&
                     (itemDelta >= PARTIAL_CACHE_MIN_ITEM_DELTA ||
@@ -205,6 +234,13 @@ class MediaBrowserState(
                     }
                 }
             }
+            flushPendingItems(
+                MediaScanner.ScanProgress(
+                    scanned = scannedCount,
+                    found = items.size,
+                    foundItems = items
+                )
+            )
             if (!isViewing) {
                 mediaItems = items.shuffled()
                 currentIndex = 0
@@ -309,6 +345,11 @@ class MediaBrowserState(
         if (subfolderFilterUri != null) currentIndex = 0
     }
 
+    fun saveVideoMuted(value: Boolean) {
+        videoMuted = value
+        prefs.edit().putBoolean("video_muted", value).apply()
+    }
+
     fun rescanMedia() {
         if (!hasScanned && mediaItems.isNotEmpty()) {
             val resumableItems = latestScannedItems.takeIf { it.isNotEmpty() } ?: mediaItems
@@ -375,9 +416,15 @@ class MediaBrowserState(
     fun startFavoriteBrowsing() {
         val favoriteItems = mediaItems.filter { it.uriString in favoriteUris }
         if (favoriteUris.isEmpty()) {
-            scanMessage = "收藏列表为空。浏览图片或视频时双击即可收藏。"
+            favoriteHint = FavoriteHint(
+                "收藏列表为空。浏览图片或视频时点击底部的心形按钮即可收藏。",
+                FavoriteHintAction.StartBrowsing
+            )
         } else if (favoriteItems.isEmpty()) {
-            scanMessage = "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。"
+            favoriteHint = FavoriteHint(
+                "收藏文件未在当前扫描结果中找到。可能原因：文件已删除、文件夹未添加，或授权已失效。",
+                FavoriteHintAction.Rescan
+            )
         } else {
             val shuffledFavorites = favoriteItems.shuffled()
             val favoriteUriSet = shuffledFavorites.map { it.uriString }.toSet()

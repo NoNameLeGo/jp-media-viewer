@@ -18,7 +18,7 @@ const val MEDIA_CACHE_FILE_NAME = "media_scan_cache.json"
 const val PARTIAL_CACHE_MIN_ITEM_DELTA = 1_000
 const val PARTIAL_CACHE_MIN_INTERVAL_MS = 10_000L
 
-public data class CachedMediaScan(
+internal data class CachedMediaScan(
     val items: List<MediaItem>,
     val scanned: Int,
     val complete: Boolean
@@ -32,7 +32,7 @@ fun mediaCacheFoldersKey(folders: List<String>): String {
     return folders.sorted().joinToString("\n")
 }
 
-fun loadCachedMediaScan(
+internal fun loadCachedMediaScan(
     context: Context,
     prefs: SharedPreferences,
     folders: List<String>,

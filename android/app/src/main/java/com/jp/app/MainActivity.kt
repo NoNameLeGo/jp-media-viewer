@@ -96,6 +96,11 @@ private fun MainApp(prefs: android.content.SharedPreferences, context: android.c
                     state.currentIndex = (state.currentIndex - 1 + visibleItems.size) % visibleItems.size
                 }
             },
+            onJumpTo = { index ->
+                if (visibleItems.isNotEmpty()) {
+                    state.currentIndex = index.coerceIn(0, visibleItems.lastIndex)
+                }
+            },
             isFavorite = visibleItems[safeIndex].uriString in state.favoriteUris,
             onToggleFavorite = {
                 val currentItem = visibleItems[state.currentIndex.coerceIn(0, visibleItems.lastIndex)]
@@ -125,7 +130,9 @@ private fun MainApp(prefs: android.content.SharedPreferences, context: android.c
             },
             onSettings = { state.showSettings = !state.showSettings },
             onToggleSubfolderFilter = { state.toggleSubfolderFilter() },
-            onMediaLoadError = { state.mediaLoadError = true }
+            onMediaLoadError = { state.mediaLoadError = true },
+            isVideoMuted = state.videoMuted,
+            onToggleMute = { state.saveVideoMuted(!state.videoMuted) }
         )
 
         // ── Viewer settings dialog ─────────────────────────────
@@ -183,6 +190,31 @@ private fun MainApp(prefs: android.content.SharedPreferences, context: android.c
             text = { Text(state.scanMessage ?: "") },
             confirmButton = {
                 TextButton(onClick = { state.scanMessage = null }) { Text("知道了") }
+            }
+        )
+    }
+
+    // ── Favorite hint dialog ─────────────────────────────────
+    val favoriteHint = state.favoriteHint
+    if (favoriteHint != null) {
+        AlertDialog(
+            onDismissRequest = { state.favoriteHint = null },
+            title = { Text("收藏提示") },
+            text = { Text(favoriteHint.message) },
+            confirmButton = {
+                when (favoriteHint.action) {
+                    FavoriteHintAction.StartBrowsing -> TextButton(onClick = {
+                        state.favoriteHint = null
+                        state.startBrowsing()
+                    }) { Text("开始浏览") }
+                    FavoriteHintAction.Rescan -> TextButton(onClick = {
+                        state.favoriteHint = null
+                        state.rescanMedia()
+                    }) { Text("重新扫描") }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { state.favoriteHint = null }) { Text("知道了") }
             }
         )
     }

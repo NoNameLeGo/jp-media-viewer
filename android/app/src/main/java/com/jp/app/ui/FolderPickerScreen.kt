@@ -249,7 +249,7 @@ private fun AboutDialog(
                 )
                 AboutRow(
                     label = "第三方组件",
-                    value = "Jetpack Compose、Coil、Media3、AndroidX DocumentFile"
+                    value = "Jetpack Compose、Coil、Media3"
                 )
             }
         },

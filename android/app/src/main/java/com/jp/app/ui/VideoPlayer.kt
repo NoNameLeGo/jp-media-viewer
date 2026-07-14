@@ -42,7 +42,7 @@ fun VideoPlayer(
     }
 
     // Apply mute state when it changes
-    LaunchedEffect(player, isMuted) {
+    LaunchedEffect(isMuted) {
         player.volume = if (isMuted) 0f else 1f
     }
 
@@ -87,7 +87,7 @@ fun VideoPlayer(
         factory = { ctx ->
             PlayerView(ctx).apply {
                 this.player = player
-                useController = true
+                useController = false
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             }
         },
