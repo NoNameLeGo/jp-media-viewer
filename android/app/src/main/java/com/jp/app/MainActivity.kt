@@ -1,12 +1,9 @@
 package com.jp.app
 
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,10 +15,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +22,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.jp.app.ui.FolderPickerScreen
 import com.jp.app.ui.MediaViewerScreen
+import com.jp.app.ui.PredictiveBackContainer
+import com.jp.app.ui.SettingsScreen
+import com.jp.app.ui.theme.JpMediaViewerTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -37,18 +33,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val darkTheme = isSystemInDarkTheme()
-            val colorScheme = when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme -> dynamicDarkColorScheme(this)
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicLightColorScheme(this)
-                darkTheme -> darkColorScheme()
-                else -> lightColorScheme()
-            }
-            MaterialTheme(colorScheme = colorScheme) {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    MainApp(prefs, applicationContext)
-                }
-            }
+            MainApp(prefs, applicationContext)
         }
     }
 }
@@ -58,6 +43,15 @@ private fun MainApp(prefs: android.content.SharedPreferences, context: android.c
     val state = rememberMediaBrowserState(prefs, context)
     val contextForToast = LocalContext.current
 
+    JpMediaViewerTheme(pureBlack = state.pureBlack) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            MainAppContent(state, contextForToast)
+        }
+    }
+}
+
+@Composable
+private fun MainAppContent(state: MediaBrowserState, contextForToast: android.content.Context) {
     // ── Effects ──────────────────────────────────────────────
     androidx.compose.runtime.LaunchedEffect(state.folders, state.respectNomedia) {
         state.loadInitialCache()
@@ -66,98 +60,125 @@ private fun MainApp(prefs: android.content.SharedPreferences, context: android.c
         state.runScanIfNeeded()
     }
 
-    // ── Back ─────────────────────────────────────────────────
-    BackHandler(enabled = state.isViewing) {
-        state.isViewing = false
-        state.isFavoriteBrowsing = false
-        state.showSettings = false
-        state.mediaLoadError = false
-        state.subfolderFilterUri = null
-    }
-
     // ── Routing ──────────────────────────────────────────────
     val visibleItems = state.visibleItems
+    val viewerOnTop = state.isViewing && visibleItems.isNotEmpty()
 
-    if (state.isViewing && visibleItems.isNotEmpty()) {
-        val safeIndex = state.currentIndex.coerceIn(0, visibleItems.lastIndex)
-
-        MediaViewerScreen(
-            mediaItems = visibleItems,
-            currentIndex = safeIndex,
-            isFavoriteBrowsing = state.isFavoriteBrowsing,
-            subfolderFilterUri = state.subfolderFilterUri,
-            onNext = {
-                if (visibleItems.isNotEmpty()) {
-                    state.currentIndex = (state.currentIndex + 1) % visibleItems.size
-                }
-            },
-            onPrevious = {
-                if (visibleItems.isNotEmpty()) {
-                    state.currentIndex = (state.currentIndex - 1 + visibleItems.size) % visibleItems.size
-                }
-            },
-            onJumpTo = { index ->
-                if (visibleItems.isNotEmpty()) {
-                    state.currentIndex = index.coerceIn(0, visibleItems.lastIndex)
-                }
-            },
-            isFavorite = visibleItems[safeIndex].uriString in state.favoriteUris,
-            onToggleFavorite = {
-                val currentItem = visibleItems[state.currentIndex.coerceIn(0, visibleItems.lastIndex)]
-                val wasFavorite = currentItem.uriString in state.favoriteUris
-                val newFavorites = state.toggleFavorite(currentItem)
-                Toast.makeText(
-                    contextForToast,
-                    if (wasFavorite) "已取消收藏" else "已收藏",
-                    Toast.LENGTH_SHORT
-                ).show()
-                if (state.isFavoriteBrowsing) {
-                    val remainingCount = state.mediaItems.count { it.uriString in newFavorites }
-                    if (remainingCount == 0) {
-                        state.isViewing = false
-                        state.isFavoriteBrowsing = false
-                        state.currentIndex = 0
-                        state.scanMessage = "收藏列表为空。"
-                    } else if (state.currentIndex >= remainingCount) {
-                        state.currentIndex = remainingCount - 1
-                    }
-                }
-            },
-            onBack = {
-                state.isViewing = false
-                state.isFavoriteBrowsing = false
-                state.subfolderFilterUri = null
-            },
-            onSettings = { state.showSettings = !state.showSettings },
-            onToggleSubfolderFilter = { state.toggleSubfolderFilter() },
-            onMediaLoadError = { state.mediaLoadError = true },
-            isVideoMuted = state.videoMuted,
-            onToggleMute = { state.saveVideoMuted(!state.videoMuted) }
-        )
-
-        // ── Viewer settings dialog ─────────────────────────────
-        if (state.showSettings) {
-            ViewerSettingsDialog(state)
+    // 返回动作：设置页优先关闭；否则退出 viewer 并清理相关状态。
+    val performBack = {
+        if (state.showAppSettings) {
+            state.showAppSettings = false
+        } else {
+            state.isViewing = false
+            state.isFavoriteBrowsing = false
+            state.showSettings = false
+            state.mediaLoadError = false
+            state.subfolderFilterUri = null
         }
-    } else {
+    }
+
+    // 首页既是根屏，也是预测式返回时露出的下层。
+    val folderPicker: @Composable () -> Unit = {
         FolderPickerScreen(
             folders = state.folders,
-            respectNomedia = state.respectNomedia,
             onFoldersChanged = { state.saveFolders(it) },
-            onRespectNomediaChanged = { state.saveNomedia(it) },
             onRescan = { state.rescanMedia() },
             onStopScan = { state.stopScanning() },
             onStartBrowsing = { state.startBrowsing() },
             onStartFavorites = { state.startFavoriteBrowsing() },
+            onOpenSettings = { state.showAppSettings = true },
             isScanning = state.isScanning,
             scanProgress = state.scanProgress,
             mediaCount = state.mediaItems.size,
             favoriteCount = state.favoriteUris.size,
             hasScanned = state.hasScanned,
-            canResumeScan = !state.hasScanned && state.mediaItems.isNotEmpty(),
-            mediaCacheSizeBytes = state.mediaCacheSizeBytes,
-            onClearMediaCache = { state.clearMediaCacheOnly() },
-            onClearFavorites = { state.clearFavorites() }
+            canResumeScan = !state.hasScanned && state.mediaItems.isNotEmpty()
+        )
+    }
+
+    if (!viewerOnTop && !state.showAppSettings) {
+        // 根屏：默认返回退出 App，无需 PredictiveBackHandler。
+        folderPicker()
+    } else {
+        PredictiveBackContainer(
+            onBack = performBack,
+            background = folderPicker,
+            foreground = {
+                if (viewerOnTop) {
+                    val safeIndex = state.currentIndex.coerceIn(0, visibleItems.lastIndex)
+                    MediaViewerScreen(
+                        mediaItems = visibleItems,
+                        currentIndex = safeIndex,
+                        isFavoriteBrowsing = state.isFavoriteBrowsing,
+                        subfolderFilterUri = state.subfolderFilterUri,
+                        onNext = {
+                            if (visibleItems.isNotEmpty()) {
+                                state.currentIndex = (state.currentIndex + 1) % visibleItems.size
+                            }
+                        },
+                        onPrevious = {
+                            if (visibleItems.isNotEmpty()) {
+                                state.currentIndex = (state.currentIndex - 1 + visibleItems.size) % visibleItems.size
+                            }
+                        },
+                        onJumpTo = { index ->
+                            if (visibleItems.isNotEmpty()) {
+                                state.currentIndex = index.coerceIn(0, visibleItems.lastIndex)
+                            }
+                        },
+                        isFavorite = visibleItems[safeIndex].uriString in state.favoriteUris,
+                        onToggleFavorite = {
+                            val currentItem = visibleItems[state.currentIndex.coerceIn(0, visibleItems.lastIndex)]
+                            val wasFavorite = currentItem.uriString in state.favoriteUris
+                            val newFavorites = state.toggleFavorite(currentItem)
+                            Toast.makeText(
+                                contextForToast,
+                                if (wasFavorite) "已取消收藏" else "已收藏",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            if (state.isFavoriteBrowsing) {
+                                val remainingCount = state.mediaItems.count { it.uriString in newFavorites }
+                                if (remainingCount == 0) {
+                                    state.isViewing = false
+                                    state.isFavoriteBrowsing = false
+                                    state.currentIndex = 0
+                                    state.scanMessage = "收藏列表为空。"
+                                } else if (state.currentIndex >= remainingCount) {
+                                    state.currentIndex = remainingCount - 1
+                                }
+                            }
+                        },
+                        onBack = {
+                            state.isViewing = false
+                            state.isFavoriteBrowsing = false
+                            state.subfolderFilterUri = null
+                        },
+                        onSettings = { state.showSettings = !state.showSettings },
+                        onToggleSubfolderFilter = { state.toggleSubfolderFilter() },
+                        onMediaLoadError = { state.mediaLoadError = true },
+                        isVideoMuted = state.videoMuted,
+                        onToggleMute = { state.saveVideoMuted(!state.videoMuted) }
+                    )
+
+                    // ── Viewer settings dialog ─────────────────────────────
+                    if (state.showSettings) {
+                        ViewerSettingsDialog(state)
+                    }
+                } else {
+                    SettingsScreen(
+                        respectNomedia = state.respectNomedia,
+                        onRespectNomediaChanged = { state.saveNomedia(it) },
+                        pureBlack = state.pureBlack,
+                        onPureBlackChanged = { state.savePureBlack(it) },
+                        mediaCacheSizeBytes = state.mediaCacheSizeBytes,
+                        favoriteCount = state.favoriteUris.size,
+                        isScanning = state.isScanning,
+                        onClearMediaCache = { state.clearMediaCacheOnly() },
+                        onClearFavorites = { state.clearFavorites() },
+                        onBack = { state.showAppSettings = false }
+                    )
+                }
+            }
         )
     }
 

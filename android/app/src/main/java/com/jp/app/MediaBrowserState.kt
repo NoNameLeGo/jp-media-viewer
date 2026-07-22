@@ -85,7 +85,12 @@ class MediaBrowserState(
     var isViewing by mutableStateOf(false)
     var currentIndex by mutableStateOf(0)
     var showSettings by mutableStateOf(false)
+    var showAppSettings by mutableStateOf(false)
     var mediaLoadError by mutableStateOf(false)
+
+    // ── Appearance ──────────────────────────────────────────────
+
+    var pureBlack by mutableStateOf(prefs.getBoolean("pure_black", false))
 
     // ── Favorites ───────────────────────────────────────────────
 
@@ -348,6 +353,11 @@ class MediaBrowserState(
     fun saveVideoMuted(value: Boolean) {
         videoMuted = value
         prefs.edit().putBoolean("video_muted", value).apply()
+    }
+
+    fun savePureBlack(value: Boolean) {
+        pureBlack = value
+        prefs.edit().putBoolean("pure_black", value).apply()
     }
 
     fun rescanMedia() {
