@@ -9,63 +9,6 @@ import androidx.compose.ui.unit.dp
 import com.jp.app.data.MediaScanner
 
 @Composable
-fun CacheManagement(
-    mediaCacheSizeBytes: Long,
-    favoriteCount: Int,
-    isScanning: Boolean,
-    onClearMediaCache: () -> Unit,
-    onClearFavorites: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "缓存管理",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "媒体缓存：${formatCacheSize(mediaCacheSizeBytes)} · 收藏：${favoriteCount} 个",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onClearMediaCache, enabled = !isScanning && mediaCacheSizeBytes > 0L) {
-                    Text("清除媒体缓存")
-                }
-                OutlinedButton(onClick = onClearFavorites, enabled = !isScanning && favoriteCount > 0) {
-                    Text("清除收藏")
-                }
-            }
-        }
-    }
-}
-
-private fun formatCacheSize(bytes: Long): String {
-    if (bytes <= 0L) return "0 B"
-
-    val units = listOf("B", "KB", "MB")
-    var value = bytes.toDouble()
-    var unitIndex = 0
-    while (value >= 1024 && unitIndex < units.lastIndex) {
-        value /= 1024
-        unitIndex++
-    }
-
-    return if (unitIndex == 0) {
-        "$bytes ${units[unitIndex]}"
-    } else {
-        "%.1f %s".format(value, units[unitIndex])
-    }
-}
-
-@Composable
 fun ScanStatusComponent(
     isScanning: Boolean,
     scanProgress: MediaScanner.ScanProgress?,

@@ -3,7 +3,7 @@
 ## Project Overview
 Single-module Android app (Kotlin, Jetpack Compose + Material3) for browsing local images/videos via Storage Access Framework (SAF).
 - **License:** AGPL-3.0-only
-- **Current version:** beta0.7.8 (versionCode 52)
+- **Current version:** beta0.7.9 (versionCode 53)
 - **No ViewModel, no DI, no nav component** — all app state lives in a single `MediaBrowserState` object instantiated via `rememberMediaBrowserState(prefs, context)` in `MainActivity.kt` (`MainApp` composable). Screen routing is an `if/else` on `state.isViewing`.
 - **No media permissions in manifest** — SAF-only file access. No `READ_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, or `READ_MEDIA_VIDEO`.
 - **Material You:** dynamic colors on Android 12+ (`dynamicDarkColorScheme`/`dynamicLightColorScheme`), manual fallback on older versions.
