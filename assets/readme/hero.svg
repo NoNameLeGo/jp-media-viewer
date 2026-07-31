@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="400" viewBox="0 0 1200 400"
+     role="img" aria-labelledby="hero-title hero-desc">
+  <title id="hero-title">JP Media Viewer</title>
+  <desc id="hero-desc">JP Media Viewer — 一款 Android 手势驱动本地媒体浏览器，支持 SAF 扫描、随机浏览与视频播放。</desc>
+
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0D1117"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#0D1117"/>
+    </linearGradient>
+    <linearGradient id="photo-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="35%" stop-color="#F97316"/>
+      <stop offset="70%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="bezel-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2D3436"/>
+      <stop offset="100%" stop-color="#1E2324"/>
+    </linearGradient>
+    <linearGradient id="accent-line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#58A6FF"/>
+      <stop offset="100%" stop-color="#F78166"/>
+    </linearGradient>
+    <filter id="phone-glow" x="-10%" y="-10%" width="130%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="16"/>
+      <feOffset dx="0" dy="8"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="grid-dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1" fill="#1A2332" opacity="0.5"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="400" rx="24" fill="url(#bg-grad)"/>
+  <rect width="1200" height="400" rx="24" fill="url(#grid-dots)" opacity="0.3"/>
+
+  <!-- === 左侧内容 === -->
+
+  <!-- 分类标签 -->
+  <rect x="56" y="64" width="88" height="26" rx="13" fill="#1C2A42"/>
+  <text x="100" y="81" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+        font-size="12" font-weight="600" fill="#58A6FF" text-anchor="middle" letter-spacing="1">
+    Android
+  </text>
+
+  <!-- 标题 -->
+  <text x="56" y="140" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+        font-size="56" font-weight="800" fill="#E6EDF3" letter-spacing="-1">
+    JP Media Viewer
+  </text>
+
+  <!-- 标题下装饰线 -->
+  <line x1="56" y1="158" x2="340" y2="158" stroke="url(#accent-line)" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- 副标题 -->
+  <text x="56" y="194" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+        font-size="20" font-weight="400" fill="#8B949E">
+    <tspan x="56" dy="0">浏览本地照片和视频 ——</tspan>
+    <tspan x="56" dy="28">无需存储权限，仅靠手势操作。</tspan>
+  </text>
+
+  <!-- 版本 / 许可 -->
+  <rect x="56" y="248" width="80" height="22" rx="6" fill="#161B22" stroke="#30363D" stroke-width="1"/>
+  <text x="96" y="263" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+        font-size="12" fill="#8B949E" text-anchor="middle">
+    beta0.7.10
+  </text>
+  <text x="146" y="263" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+        font-size="12" fill="#58A6FF">
+    AGPL-3.0
+  </text>
+
+  <!-- 装饰：缩略图网格 -->
+  <g opacity="0.5">
+    <rect x="56" y="296" width="52" height="48" rx="6" fill="#1C2A42" stroke="#30363D" stroke-width="1" transform="rotate(-2, 82, 320)"/>
+    <rect x="116" y="294" width="36" height="36" rx="5" fill="#1C2A42" stroke="#30363D" stroke-width="1" transform="rotate(1, 134, 312)"/>
+    <rect x="160" y="298" width="48" height="44" rx="6" fill="#1C2A42" stroke="#30363D" stroke-width="1" transform="rotate(-1, 184, 320)"/>
+    <rect x="216" y="296" width="40" height="40" rx="5" fill="#1C2A42" stroke="#30363D" stroke-width="1" transform="rotate(2, 236, 316)"/>
+    <rect x="72" y="348" width="40" height="36" rx="5" fill="#1C2A42" stroke="#30363D" stroke-width="1" transform="rotate(1, 92, 366)"/>
+    <rect x="120" y="350" width="52" height="40" rx="6" fill="#1C2A42" stroke="#30363D" stroke-width="1" transform="rotate(-2, 146, 370)"/>
+    <rect x="180" y="346" width="36" height="36" rx="5" fill="#1C2A42" stroke="#30363D" stroke-width="1" transform="rotate(1, 198, 364)"/>
+    <rect x="224" y="350" width="44" height="38" rx="5" fill="#1C2A42" stroke="#30363D" stroke-width="1" transform="rotate(-1, 246, 369)"/>
+  </g>
+  <rect x="116" y="294" width="36" height="36" rx="5" fill="#7928CA" opacity="0.15"/>
+  <rect x="216" y="296" width="40" height="40" rx="5" fill="#F78166" opacity="0.12"/>
+  <rect x="72" y="348" width="40" height="36" rx="5" fill="#58A6FF" opacity="0.12"/>
+
+  <!-- === 右侧：手机模拟器 === -->
+
+  <rect x="846" y="30" width="248" height="440" rx="38" fill="#000" opacity="0.3" transform="translate(6,6)"/>
+  <rect x="846" y="24" width="248" height="440" rx="36" fill="url(#bezel-grad)" filter="url(#phone-glow)"/>
+  <rect x="854" y="32" width="232" height="424" rx="4" fill="#0D1117"/>
+  <rect x="854" y="32" width="232" height="24" rx="4" fill="#0D1117"/>
+
+  <!-- 状态栏 -->
+  <text x="870" y="47" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+        font-size="10" fill="#8B949E" font-weight="600">9:41</text>
+  <circle cx="1060" cy="44" r="2.5" fill="#8B949E"/>
+  <circle cx="1068" cy="44" r="2.5" fill="#8B949E"/>
+  <circle cx="1076" cy="44" r="2.5" fill="#8B949E"/>
+  <rect x="1056" y="39" width="22" height="10" rx="2" fill="none" stroke="#8B949E" stroke-width="1"/>
+
+  <!-- 照片区域 - 日落渐变 -->
+  <rect x="854" y="56" width="232" height="352" fill="url(#photo-grad)"/>
+  <circle cx="990" cy="160" r="40" fill="#FCD34D" opacity="0.4"/>
+  <circle cx="990" cy="160" r="28" fill="#FEF3C7" opacity="0.5"/>
+  <g opacity="0.25">
+    <path d="M854 320 L910 260 L950 295 L1000 240 L1040 280 L1086 230 V408 H854 Z" fill="#1F2937"/>
+  </g>
+
+  <!-- 顶部覆盖栏：媒体计数 -->
+  <rect x="854" y="56" width="232" height="36" fill="url(#photo-grad)" opacity="0"/>
+  <rect x="854" y="56" width="232" height="36" fill="#0D1117" opacity="0.4"/>
+  <rect x="900" y="65" width="60" height="18" rx="9" fill="#0D1117" opacity="0.6"/>
+  <text x="930" y="77" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+        font-size="10" fill="#E6EDF3" text-anchor="middle">37 / 142</text>
+
+  <!-- 底部控制栏 -->
+  <rect x="854" y="408" width="232" height="48" fill="#0D1117" opacity="0.85"/>
+  <rect x="854" y="408" width="232" height="1" fill="#30363D"/>
+
+  <!-- 收藏心形图标 -->
+  <g transform="translate(888, 424)">
+    <path d="M10 0 C10 0 0 5 0 14 C0 23 10 28 10 28 C10 28 20 23 20 14 C20 5 10 0 10 0Z"
+          fill="none" stroke="#F78166" stroke-width="1.5"/>
+  </g>
+
+  <!-- 播放按钮 -->
+  <g transform="translate(960, 425)">
+    <polygon points="0,0 16,8 0,16" fill="#E6EDF3" opacity="0.7"/>
+  </g>
+
+  <!-- 文件名 -->
+  <text x="1000" y="435" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+        font-size="10" fill="#8B949E">IMG_20240730.jpg</text>
+
+  <!-- 文件夹标记 -->
+  <rect x="1000" y="440" width="36" height="12" rx="3" fill="#30363D"/>
+  <text x="1018" y="449" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+        font-size="8" fill="#8B949E" text-anchor="middle">DCIM</text>
+
+  <!-- 上滑手势提示 -->
+  <g opacity="0.2" transform="translate(970, 340)">
+    <path d="M0 0 L-8 10 L8 10 Z" fill="#E6EDF3"/>
+  </g>
+  <text x="970" y="336" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+        font-size="9" fill="#E6EDF3" text-anchor="middle" opacity="0.2">上滑</text>
+
+  <!-- 听筒 -->
+  <rect x="950" y="28" width="40" height="3" rx="1.5" fill="#3D444D"/>
+
+</svg>

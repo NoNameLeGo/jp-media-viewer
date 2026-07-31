@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="100" viewBox="0 0 1200 100"
+     role="img" aria-labelledby="sec-feat-title sec-feat-desc">
+  <title id="sec-feat-title">功能一览</title>
+  <desc id="sec-feat-desc">JP Media Viewer 功能总览：智能扫描、手势浏览、视频播放、收藏整理、快捷操作</desc>
+  <defs>
+    <linearGradient id="feat-line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#58A6FF"/>
+      <stop offset="100%" stop-color="#F78166"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="100" rx="16" fill="#0D1117"/>
+  <rect x="56" y="0" width="2" height="100" fill="url(#feat-line)" opacity="0.3"/>
+  <text x="76" y="44" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+        font-size="28" font-weight="700" fill="#E6EDF3" letter-spacing="-0.5">
+    功能一览
+  </text>
+  <text x="76" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
+        font-size="13" fill="#8B949E">
+    从智能扫描到手势操控，从视频播放到收藏管理 —— 一个 App，搞定本地媒体浏览
+  </text>
+</svg>
